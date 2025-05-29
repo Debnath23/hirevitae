@@ -1,17 +1,6 @@
 "use client";
 
 import {
-  Search,
-  Plus,
-  MoreHorizontal,
-  Grid3X3,
-  Users,
-  MessageCircle,
-  Settings,
-  LogOut,
-  Headphones,
-  CreditCard,
-  UserCheck,
   Phone,
   Mail,
   Heart,
@@ -47,6 +36,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
+import {
+  Vector,
+  Users,
+  Settings,
+  Briefcase,
+  Barcode,
+  UserPlus,
+  ChatText,
+  BankCard,
+  Logout,
+  Plus,
+  Filter,
+  Search,
+  SeenCheckmark,
+} from "@/public/icons/index";
 
 const conversations = [
   {
@@ -203,15 +207,15 @@ const messages = [
 ];
 
 const sidebarItems = [
-  { icon: Grid3X3, color: "#6e6af0", isActive: false },
-  { icon: Users, color: "#3e90f0", isActive: false },
-  { icon: MessageCircle, color: "#0e7490", isActive: false },
-  { icon: Headphones, color: "#ee6723", isActive: false },
-  { icon: UserCheck, color: "#a3a3a3", isActive: false },
-  { icon: MessageCircle, color: "#6e6af0", isActive: true },
-  { icon: CreditCard, color: "#8e55ea", isActive: false },
+  { icon: Vector, color: "#6e6af0", isActive: false },
+  { icon: UserPlus, color: "#3e90f0", isActive: false },
+  { icon: Briefcase, color: "#0e7490", isActive: false },
+  { icon: Barcode, color: "#ee6723", isActive: false },
+  { icon: Users, color: "#a3a3a3", isActive: false },
+  { icon: ChatText, color: "#6e6af0", isActive: true },
+  { icon: BankCard, color: "#8e55ea", isActive: false },
   { icon: Settings, color: "#6c7275", isActive: false },
-  { icon: LogOut, color: "#6c7275", isActive: false },
+  { icon: Logout, color: "#6c7275", isActive: false },
 ];
 
 const socialLinks = [
@@ -269,10 +273,10 @@ export default function CompleteDashboard() {
         }
       `}</style>
       {/* Left Sidebar Navigation */}
-      <div className="w-16 bg-white border-r border-[#e2e8f0] flex flex-col items-center py-4 space-y-4">
+      <div className="w-16 bg-[#F9F9F9] border-r border-[#E2E8F0] flex flex-col items-center py-4 space-y-4">
         {/* Logo */}
-        <div className="w-8 h-8 bg-[#0e7490] rounded-full flex items-center justify-center mb-4">
-          <span className="text-white text-sm font-bold">W</span>
+        <div className="w-8 h-8 flex items-center justify-center mb-4">
+          <Image src="/logo.png" width={32} height={32} alt="logo" />
         </div>
 
         {/* Navigation Icons */}
@@ -281,57 +285,69 @@ export default function CompleteDashboard() {
             key={index}
             variant="ghost"
             size="icon"
-            className={`w-10 h-10 rounded-lg ${
+            className={`w-full rounded-none h-10 cursor-pointer ${
               item.isActive
-                ? "bg-[#eef2ff] border-l-2 border-[#6e6af0]"
+                ? "bg-[#F2F2F9] border-l-4 border-[#0961F5]"
                 : "hover:bg-[#f2f2f9]"
             }`}
           >
-            <item.icon className="w-5 h-5" style={{ color: item.color }} />
+            <Image
+              src={item.icon}
+              width={24}
+              height={24}
+              style={{ color: item.color }}
+              alt="icon"
+            />
           </Button>
         ))}
 
         {/* Profile at bottom */}
         <div className="mt-auto">
-          <div className="w-8 h-8 rounded-full bg-[#6c7275] flex items-center justify-center">
+          <div className="w-6 h-6 rounded-full overflow-hidden cursor-pointer">
             <Image
               src="/images/profile-img.jpg"
               alt="Profile"
-              width={32}
-              height={32}
-              className="rounded-full"
+              width={24}
+              height={24}
+              className="object-cover w-full h-full"
             />
           </div>
         </div>
       </div>
 
       {/* Messages Section */}
-      <div className="w-80 bg-white border-r border-[#e2e8f0] flex flex-col">
+      <div className="w-80 border-r border-[#e2e8f0] flex flex-col">
         {/* Messages Header */}
-        <div className="px-6 py-4 border-b border-[#e2e8f0] flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#EEF2FF] border-[#e2e8f0] flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-[#1e293b]">Messages</h1>
-            <Badge className="bg-[#ef4444] text-white rounded-full px-2 py-1 text-xs">
+            <h1 className="text-2xl font-[800] text-[#1E293B]">Messages</h1>
+            <Badge className="bg-[#FFF1F2] text-[#F43F5E] border border-[#FFE4E6] rounded-full px-2 py-1 text-sm">
               25
             </Badge>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon">
-              <Plus className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="cursor-pointer">
+              <Image src={Plus} width={24} height={24} alt="plus" />
             </Button>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="w-5 h-5" />
+            <Button variant="ghost" size="icon" className="cursor-pointer">
+              <Image src={Filter} width={24} height={24} alt="filter" />
             </Button>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="px-6 py-4 border-b border-[#e2e8f0]">
+        <div className="px-6 py-4 bg-[#EEF2FF] border-b border-[#CBD5E1]">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#94a3b8] w-4 h-4" />
+            <Image
+              src={Search}
+              width={20}
+              height={20}
+              alt="search"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#475569]"
+            />
             <Input
               placeholder="Search..."
-              className="pl-10 bg-[#f8fafc] border-[#e2e8f0] rounded-full h-12"
+              className="pl-10 bg-[#FFFFFF] border border-[#CBD5E1] rounded-full h-12 text-[#475569] text-base font-[500]"
             />
           </div>
         </div>
@@ -342,9 +358,9 @@ export default function CompleteDashboard() {
             <div
               key={conversation.id}
               className={`flex items-center px-6 py-4 hover:bg-[#f8fafc] cursor-pointer border-b border-[#f2f2f9] relative ${
-                conversation.isSelected
-                  ? "bg-[#f8fafc] border-l-2 border-l-[#6e6af0]"
-                  : ""
+                conversation.online && conversation.unread > 0
+                  ? " border-l-2 border-l-[#6e6af0]"
+                  : "bg-[#FFFFFF]"
               }`}
             >
               {/* Avatar */}
@@ -352,31 +368,33 @@ export default function CompleteDashboard() {
                 <Image
                   src={conversation.avatar || "/placeholder.svg"}
                   alt={conversation.name}
-                  width={40}
-                  height={40}
+                  width={48}
+                  height={48}
                   className="rounded-full"
                 />
-                {conversation.online && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#22c55e] border-2 border-white rounded-full"></div>
+                {conversation.online ? (
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#22C55E] border-2 border-white rounded-full"></div>
+                ) : (
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#CBD5E1] border-2 border-white rounded-full"></div>
                 )}
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-semibold text-[#1e293b] truncate">
+                  <h3 className="font-[700] text-[#1E293B] truncate text-base">
                     {conversation.name}
                   </h3>
-                  <span className="text-xs text-[#94a3b8] ml-2">
+                  <span className="text-xs text-[##5F5F5F] ml-2 font-[400]">
                     {conversation.time}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <p
-                    className={`text-sm truncate ${
+                    className={`truncate ${
                       conversation.isTyping
-                        ? "text-[#22c55e]"
-                        : "text-[#6c7275]"
+                        ? "text-[#24D059] font-[400] text-xs"
+                        : "text-[#475569] text-sm font-[500]"
                     }`}
                   >
                     {conversation.message}
@@ -384,21 +402,22 @@ export default function CompleteDashboard() {
                   <div className="flex items-center space-x-2 ml-2">
                     {conversation.hasCheckmark && (
                       <div className="text-[#22c55e]">
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+                        <Image
+                          src={SeenCheckmark}
+                          width={20}
+                          height={20}
+                          alt="seen-checkmark"
+                        />
                       </div>
                     )}
                     {conversation.unread > 0 && (
-                      <Badge className="bg-[#6e6af0] text-white rounded-full min-w-[20px] h-5 text-xs flex items-center justify-center">
+                      <Badge
+                        className={`${
+                          conversation.online
+                            ? "bg-[#4F46E5] text-white"
+                            : "bg-[#E2E8F0] text-black"
+                        } rounded-full min-w-[20px] h-5 text-xs flex items-center justify-center`}
+                      >
                         {conversation.unread}
                       </Badge>
                     )}
@@ -418,7 +437,7 @@ export default function CompleteDashboard() {
             <div className="flex items-center space-x-3">
               <div className="relative">
                 <Image
-                  src="/images/avatar-44.png"
+                  src="/images/avatar-40.png"
                   alt="Azunyan U. Wu"
                   width={48}
                   height={48}
@@ -426,17 +445,18 @@ export default function CompleteDashboard() {
                 />
               </div>
               <div>
-                <h2 className="font-bold text-[#1e293b] text-lg">
-                  Azunyan U. Wu
-                </h2>
                 <div className="flex items-center space-x-2">
-                  <span className="text-[#6c7275] text-sm">
-                    @azusanakano_1997
-                  </span>
-                  <Badge className="bg-[#22c55e] text-white text-xs px-2 py-1 rounded-full">
-                    • Online
+                  <h2 className="font-[700] text-[#1E293B] text-base">
+                    Azunyan U. Wu
+                  </h2>
+                  <Badge className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#22C55E] font-[700] text-xs px-2 py-1 rounded-[3px]">
+                    <span className="w-1.5 h-1.5 bg-[#22C55E] rounded-full"></span> Online
                   </Badge>
                 </div>
+
+                <span className="text-[#475569] text-sm font-[500]">
+                  @azusanakano_1997
+                </span>
               </div>
             </div>
 
@@ -459,7 +479,7 @@ export default function CompleteDashboard() {
                 View Profile
               </Button>
               <Button variant="ghost" size="icon">
-                <Search className="w-4 h-4" />
+                <Image src={Search} width={20} height={20} alt="search" />
               </Button>
               <Button variant="ghost" size="icon">
                 <MoreVertical className="w-4 h-4" />
@@ -905,7 +925,16 @@ export default function CompleteDashboard() {
                       className="w-8 h-8 rounded-lg flex items-center justify-center"
                       style={{ backgroundColor: activity.color }}
                     >
-                      <activity.icon className="w-4 h-4 text-white" />
+                      {typeof activity.icon === "function" ? (
+                        <activity.icon className="w-4 h-4 text-white" />
+                      ) : (
+                        <Image
+                          src={activity.icon}
+                          alt="icon"
+                          width={16}
+                          height={16}
+                        />
+                      )}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
