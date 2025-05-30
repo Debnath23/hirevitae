@@ -249,7 +249,7 @@ const activities = [
     title: "Payroll payment is due",
     subtitle: "Payroll due: Process #py22240932 promptly",
     time: "3min ago",
-    color: "#ef4444",
+    color: "#DE1C411A",
     icon: AlertCircle,
   },
   {
@@ -257,7 +257,7 @@ const activities = [
     title: "Document approval",
     subtitle: "New document need to be checked contract...doc or #emp22240654",
     time: "21h ago",
-    color: "#ef4444",
+    color: "#F0EBFD",
     icon: File,
   },
   {
@@ -266,8 +266,8 @@ const activities = [
     subtitle:
       "Angela has set up new meeting for July 30 Monthly report meeting for July 2024",
     time: "2h ago",
-    color: "#f59e0b",
-    icon: CalendarBlank,
+    color: "#FFF4E5",
+    icon: Calendar,
   },
 ];
 
@@ -1041,7 +1041,9 @@ export default function CompleteDashboard() {
         <div className="px-6 pb-6">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2">
-              <h3 className="font-[700] text-[15px] text-[#1E293B]">Activities</h3>
+              <h3 className="font-[700] text-[15px] text-[#1E293B]">
+                Activities
+              </h3>
               <Badge className="bg-[#FFF1F2] border border-[#FFE4E6] rounded-full w-6 h-6 flex items-center justify-center text-xs font-[600] text-[#F43F5E]">
                 25
               </Badge>
@@ -1059,36 +1061,29 @@ export default function CompleteDashboard() {
                 <CardContent className="p-4">
                   <div className="flex items-start space-x-3">
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
                       style={{ backgroundColor: activity.color }}
                     >
-                      {typeof activity.icon === "function" ? (
-                        <activity.icon className="w-4 h-4 text-white" />
-                      ) : (
-                        <Image
-                          src={activity.icon}
-                          alt="icon"
-                          width={16}
-                          height={16}
-                        />
-                      )}
+                      <Image
+                        src={activity.icon}
+                        alt="icon"
+                        width={16}
+                        height={16}
+                      />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-semibold text-[#1e293b] text-sm">
+                        <h4 className="font-[500] text-[#09090B] text-[11px]">
                           {activity.title}
                         </h4>
                         <div className="flex items-center space-x-1">
-                          <span className="text-[#94a3b8] text-xs">
+                          <span className="text-[#09090B] font-[400] text-[10px]">
                             {activity.time}
                           </span>
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: activity.color }}
-                          ></div>
+                          <div className="w-2 h-2 rounded-full bg-[#FF0000]"></div>
                         </div>
                       </div>
-                      <p className="text-[#6b7280] text-xs">
+                      <p className="text-[#717179] font-[400] text-[10px]">
                         {activity.subtitle}
                       </p>
                     </div>
