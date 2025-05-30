@@ -1,36 +1,6 @@
 "use client";
 
-import {
-  Phone,
-  Mail,
-  Heart,
-  ThumbsUp,
-  Smile,
-  Bold,
-  Italic,
-  Underline,
-  List,
-  ListOrdered,
-  Link,
-  Paperclip,
-  Code,
-  Send,
-  Folder,
-  ImageIcon,
-  Facebook,
-  Twitter,
-  Linkedin,
-  Instagram,
-  Youtube,
-  ChevronRight,
-  Calendar,
-  ChevronDown,
-  Star,
-  FileText,
-  Tag,
-  AlertCircle,
-  MoreVertical,
-} from "lucide-react";
+import { Facebook, ChevronRight, FileText, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +20,43 @@ import {
   Filter,
   Search,
   SeenCheckmark,
+  Call,
+  DeviceMobileCamera,
+  FolderOpen,
+  Inbox,
+  MonotoneAdd,
+  Search2,
+  LinkSimple,
+  FileImage,
+  Emoji1,
+  Emoji2,
+  Emoji3,
+  TablerBold,
+  TablerCode,
+  TablerItalic,
+  TablerLink,
+  TablerList,
+  TablerListNumbers,
+  TablerMoodSmile,
+  TablerUnderline,
+  ChevronDown,
+  Photo,
+  Send,
+  Verified,
+  EmployersLogo,
+  Twitter,
+  Linkedin,
+  Instagram,
+  Youtube,
+  Alarm,
+  Star,
+  Img,
+  AtSign,
+  CalendarBlank,
+  BellSimple,
+  AlertCircle,
+  File,
+  Calendar,
 } from "@/public/icons/index";
 
 const conversations = [
@@ -157,8 +164,12 @@ const messages = [
     content:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     attachments: [
-      { type: "project", name: "Web Design Project", icon: Folder },
-      { type: "prototype", name: "Figma App Prototype", icon: ImageIcon },
+      { type: "project", name: "Web Design Project", icon: FolderOpen },
+      {
+        type: "prototype",
+        name: "Figma App Prototype",
+        icon: DeviceMobileCamera,
+      },
     ],
     reactions: {
       heart: 22,
@@ -182,8 +193,8 @@ const messages = [
     content:
       "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     attachments: [
-      { type: "link", name: "Project Link", icon: Link },
-      { type: "image", name: "Web Design Image", icon: ImageIcon },
+      { type: "link", name: "Project Link", icon: LinkSimple },
+      { type: "image", name: "Web Design Image", icon: FileImage },
     ],
     date: "Friday",
   },
@@ -219,17 +230,17 @@ const sidebarItems = [
 ];
 
 const socialLinks = [
-  { icon: Facebook, color: "#1877f2", href: "#" },
-  { icon: Twitter, color: "#1da1f2", href: "#" },
-  { icon: Linkedin, color: "#0077b5", href: "#" },
-  { icon: Instagram, color: "#e4405f", href: "#" },
-  { icon: Youtube, color: "#ff0000", href: "#" },
+  { icon: EmployersLogo, color: "#E7F0FA", href: "#" },
+  { icon: Twitter, color: "#0961F5", href: "#" },
+  { icon: Linkedin, color: "#E7F0FA", href: "#" },
+  { icon: Instagram, color: "#E7F0FA", href: "#" },
+  { icon: Youtube, color: "#E7F0FA", href: "#" },
 ];
 
 const statsItems = [
-  { icon: Star, label: "Your star messages", count: 0, color: "#f59e0b" },
-  { icon: FileText, label: "Docs, files, media", count: 96, color: "#ec4899" },
-  { icon: Tag, label: "Tagged", count: 1, color: "#3b82f6" },
+  { icon: Star, label: "Your star messages", count: 0, color: "#FFF7E7" },
+  { icon: Img, label: "Docs, files, media", count: 96, color: "#FFEEF7" },
+  { icon: AtSign, label: "Tagged", count: 1, color: "#E1EBFF" },
 ];
 
 const activities = [
@@ -247,7 +258,7 @@ const activities = [
     subtitle: "New document need to be checked contract...doc or #emp22240654",
     time: "21h ago",
     color: "#ef4444",
-    icon: FileText,
+    icon: File,
   },
   {
     id: 3,
@@ -256,13 +267,13 @@ const activities = [
       "Angela has set up new meeting for July 30 Monthly report meeting for July 2024",
     time: "2h ago",
     color: "#f59e0b",
-    icon: Users,
+    icon: CalendarBlank,
   },
 ];
 
 export default function CompleteDashboard() {
   return (
-    <div className="flex h-screen bg-[#f8fafc] w-[1440px] mx-auto">
+    <div className="flex h-screen my-3 bg-[#f8fafc] w-[1440px] mx-auto">
       <style jsx global>{`
         .hide-scrollbar {
           -ms-overflow-style: none;
@@ -450,7 +461,8 @@ export default function CompleteDashboard() {
                     Azunyan U. Wu
                   </h2>
                   <Badge className="bg-[#F0FDF4] border border-[#BBF7D0] text-[#22C55E] font-[700] text-xs px-2 py-1 rounded-[3px]">
-                    <span className="w-1.5 h-1.5 bg-[#22C55E] rounded-full"></span> Online
+                    <span className="w-1.5 h-1.5 bg-[#22C55E] rounded-full"></span>{" "}
+                    Online
                   </Badge>
                 </div>
 
@@ -464,25 +476,37 @@ export default function CompleteDashboard() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="bg-[#8e55ea] text-white hover:bg-[#7c3aed] rounded-full"
+                className="bg-[#F4ECFB] text-[#883DCF] hover:bg-[#dfd9e9] rounded-full cursor-pointer"
               >
-                <Mail className="w-4 h-4" />
+                <Image src={Inbox} alt="inbox" width={16.31} height={16.31} />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="bg-[#8e55ea] text-white hover:bg-[#7c3aed] rounded-full"
+                className="bg-[#883DCF] text-[#FFFFF] hover:bg-[#7c3aed] rounded-full cursor-pointer"
               >
-                <Phone className="w-4 h-4" />
+                <Image src={Call} alt="inbox" width={19.58} height={19.58} />
               </Button>
-              <Button className="bg-[#6e6af0] text-white hover:bg-[#5b56e8] rounded-lg px-4">
+              <Button className="bg-[#4F46E5] text-white text-sm font-[700] hover:bg-[#5b56e8] rounded-[3px] px-4 cursor-pointer">
                 View Profile
               </Button>
               <Button variant="ghost" size="icon">
-                <Image src={Search} width={20} height={20} alt="search" />
+                <Image
+                  src={Search2}
+                  width={24}
+                  height={24}
+                  alt="search"
+                  className="text-[#475569] cursor-pointer"
+                />
               </Button>
               <Button variant="ghost" size="icon">
-                <MoreVertical className="w-4 h-4" />
+                <Image
+                  src={MonotoneAdd}
+                  width={24}
+                  height={24}
+                  alt="search"
+                  className="text-[#CBD5E1] cursor-pointer"
+                />
               </Button>
             </div>
           </div>
@@ -490,18 +514,18 @@ export default function CompleteDashboard() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-4 space-y-6">
-          {messages.map((message, index) => (
+          {messages.map((message) => (
             <div key={message.id}>
               {/* Date separator */}
               {message.date && (
                 <div className="flex justify-center my-6">
-                  <span className="bg-[#e2e8f0] text-[#6c7275] px-3 py-1 rounded-full text-sm">
+                  <span className="text-[#475569] text-sm font-[700]">
                     {message.date}
                   </span>
                 </div>
               )}
 
-              <div className="flex space-x-3">
+              <div className="flex space-x-3 bg-white rounded-[8px] p-3 shadow-sm">
                 <div className="w-8 h-8">
                   <Image
                     src={message.avatar || "/placeholder.svg"}
@@ -512,28 +536,28 @@ export default function CompleteDashboard() {
                   />
                 </div>
 
-                <div className="flex-1 bg-white rounded-lg p-4 shadow-sm">
+                <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
-                    <span className="font-semibold text-[#1e293b]">
+                    <span className="font-[700] text-base text-[#1E293B]">
                       {message.user}
                     </span>
                     {message.isAdmin && (
-                      <Badge className="bg-[#6e6af0] text-white text-xs px-2 py-1 rounded">
+                      <Badge className="bg-[#EEF2FF] text-[#4F46E5] text-xs px-2 py-1 rounded-[3px] font-[700]">
                         Admin
                       </Badge>
                     )}
-                    <span className="text-[#94a3b8] text-sm">
+                    <span className="text-[#94A3B8] text-sm font-[500]">
                       {message.time}
                     </span>
                   </div>
 
-                  <p className="text-[#6c7275] mb-3 leading-relaxed">
+                  <p className="bg-[#F8FAFC] text-[#475569] font-[400] text-base mb-3 leading-relaxed rounded-[3px] p-3">
                     {message.content}
                   </p>
 
                   {/* Quote */}
                   {message.quote && (
-                    <div className="border-l-4 border-[#6e6af0] bg-[#f8fafc] p-3 mb-3 rounded-r">
+                    <div className="border-l-4 border-[#0053F2] bg-[#FCFCFC] p-2 mb-3 rounded-r">
                       <div className="flex items-center space-x-2 mb-1">
                         <Image
                           src={message.quote.avatar || "/placeholder.svg"}
@@ -542,13 +566,15 @@ export default function CompleteDashboard() {
                           height={20}
                           className="rounded-full"
                         />
-                        <span className="text-[#6e6af0] text-sm font-medium">
-                          {message.quote.text}
-                        </span>
+                        <div className="flex items-center justify-between">
+                          <div className="text-[#0053F2] text-sm font-[400]">
+                            {message.quote.text}
+                          </div>
+                          <div className="text-[#656F7D] text-sm font-[400]">
+                            — {message.quote.parts}
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-[#94a3b8] text-xs">
-                        — {message.quote.parts}
-                      </span>
                     </div>
                   )}
 
@@ -560,10 +586,18 @@ export default function CompleteDashboard() {
                           key={idx}
                           variant="outline"
                           size="sm"
-                          className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc]"
+                          className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
                         >
-                          <attachment.icon className="w-4 h-4 mr-2" />
-                          {attachment.name}
+                          <Image
+                            src={attachment.icon}
+                            width={16}
+                            height={16}
+                            alt="icon"
+                            className="mr-2"
+                          />
+                          <p className="text-[#475569] font-[700]text-sm">
+                            {attachment.name}
+                          </p>
                         </Button>
                       ))}
                     </div>
@@ -572,26 +606,53 @@ export default function CompleteDashboard() {
                   {/* Reactions */}
                   {message.reactions && (
                     <div className="flex items-center space-x-4">
-                      {message.reactions.heart && (
-                        <div className="flex items-center space-x-1">
-                          <Heart className="w-4 h-4 text-[#ef4444] fill-current" />
-                          <span className="text-sm text-[#6c7275]">
+                      {message.reactions.heart && !message.quote ? (
+                        <div className="flex items-center space-x-1.5 bg-[#F1F5F9] py-1 px-2 rounded-[3px] cursor-pointer">
+                          <Image
+                            src={Emoji1}
+                            width={16}
+                            height={22}
+                            alt="icon"
+                          />
+                          <span className="text-base font-[700] text-[#475569]">
                             {message.reactions.heart}
                           </span>
                         </div>
+                      ) : (
+                        <div className="flex items-center space-x-1 bg-[#F7F7F7] border border-[#EEEDF0] py-1 px-2 rounded-[19px] cursor-pointer">
+                          <span className="text-xs font-[400] text-[#646464]">
+                            {message.reactions.heart}
+                          </span>
+                          <Image
+                            src={Emoji1}
+                            width={14}
+                            height={14}
+                            alt="icon"
+                          />
+                        </div>
                       )}
                       {message.reactions.thumbsUp && (
-                        <div className="flex items-center space-x-1">
-                          <ThumbsUp className="w-4 h-4 text-[#f59e0b] fill-current" />
-                          <span className="text-sm text-[#6c7275]">
+                        <div className="flex items-center space-x-1.5 bg-[#F1F5F9] py-1 px-2 rounded-[3px] cursor-pointer">
+                          <Image
+                            src={Emoji2}
+                            width={16}
+                            height={22}
+                            alt="icon"
+                          />
+                          <span className="text-base font-[700] text-[#475569]">
                             {message.reactions.thumbsUp}
                           </span>
                         </div>
                       )}
                       {message.reactions.smile && (
-                        <div className="flex items-center space-x-1">
-                          <Smile className="w-4 h-4 text-[#f59e0b] fill-current" />
-                          <span className="text-sm text-[#6c7275]">
+                        <div className="flex items-center space-x-1.5 bg-[#F1F5F9] py-1 px-2 rounded-[3px] cursor-pointer">
+                          <Image
+                            src={Emoji3}
+                            width={16}
+                            height={22}
+                            alt="icon"
+                          />
+                          <span className="text-base font-[700] text-[#475569]">
                             {message.reactions.smile}
                           </span>
                         </div>
@@ -605,88 +666,129 @@ export default function CompleteDashboard() {
         </div>
 
         {/* Message Composer */}
-        <div className="bg-white border-t border-[#e2e8f0] p-4">
-          <div className="flex flex-col space-y-3">
-            {/* Formatting Toolbar */}
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-[#6c7275] hover:bg-[#f8fafc]"
-              >
-                <Bold className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-[#6c7275] hover:bg-[#f8fafc]"
-              >
-                <Italic className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-[#6c7275] hover:bg-[#f8fafc]"
-              >
-                <Underline className="w-4 h-4" />
-              </Button>
-              <div className="w-px h-4 bg-[#e2e8f0]"></div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-[#6c7275] hover:bg-[#f8fafc]"
-              >
-                <List className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-[#6c7275] hover:bg-[#f8fafc]"
-              >
-                <ListOrdered className="w-4 h-4" />
-              </Button>
-              <div className="w-px h-4 bg-[#e2e8f0]"></div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-[#6c7275] hover:bg-[#f8fafc]"
-              >
-                <Link className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-[#6c7275] hover:bg-[#f8fafc]"
-              >
-                <Smile className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-[#6c7275] hover:bg-[#f8fafc]"
-              >
-                <Paperclip className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-[#6c7275] hover:bg-[#f8fafc]"
-              >
-                <Code className="w-4 h-4" />
-              </Button>
+        <div className="px-6 py-4">
+          <div className="flex flex-col space-y-3 bg-white rounded-[8px] shadow-sm">
+            {/* Input Area */}
+            <div className="flex-1 p-3">
+              <Input
+                placeholder="Type a message..."
+                className="text-[#8C8C8C] text-sm font-[500] h-12 border-none shadow-none resize-none"
+              />
             </div>
 
-            {/* Input Area */}
-            <div className="flex items-end space-x-3">
-              <div className="flex-1">
-                <Input
-                  placeholder="Type a message..."
-                  className="border-[#e2e8f0] rounded-lg h-12 resize-none"
-                />
+            <div className="flex items-center justify-between bg-[#FAFAFA] p-3">
+              {/* Formatting Toolbar */}
+              <div className="flex items-center">
+                <div>
+                  <Button
+                    variant="ghost"
+                    className="text-[#A0AEC0] hover:bg-[#f8fafc]"
+                  >
+                    <Image src={TablerBold} width={20} height={20} alt="icon" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#6c7275] hover:bg-[#f8fafc]"
+                  >
+                    <Image
+                      src={TablerItalic}
+                      width={20}
+                      height={20}
+                      alt="icon"
+                    />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#6c7275] hover:bg-[#f8fafc]"
+                  >
+                    <Image
+                      src={TablerUnderline}
+                      width={20}
+                      height={20}
+                      alt="icon"
+                    />
+                  </Button>
+                </div>
+
+                <div className="w-px h-4 bg-[#EEEFF2] mx-2"></div>
+
+                <div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#6c7275] hover:bg-[#f8fafc]"
+                  >
+                    <Image src={TablerList} width={20} height={20} alt="icon" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#6c7275] hover:bg-[#f8fafc]"
+                  >
+                    <Image
+                      src={TablerListNumbers}
+                      width={20}
+                      height={20}
+                      alt="icon"
+                    />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#6c7275] hover:bg-[#f8fafc]"
+                  >
+                    <Image
+                      src={ChevronDown}
+                      width={20}
+                      height={20}
+                      alt="icon"
+                    />
+                  </Button>
+                </div>
+
+                <div className="w-px h-4 bg-[#e2e8f0] mx-2"></div>
+
+                <div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#6c7275] hover:bg-[#f8fafc]"
+                  >
+                    <Image src={TablerLink} width={20} height={20} alt="icon" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#6c7275] hover:bg-[#f8fafc]"
+                  >
+                    <Image
+                      src={TablerMoodSmile}
+                      width={20}
+                      height={20}
+                      alt="icon"
+                    />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#6c7275] hover:bg-[#f8fafc]"
+                  >
+                    <Image src={Photo} width={20} height={20} alt="icon" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#6c7275] hover:bg-[#f8fafc]"
+                  >
+                    <Image src={TablerCode} width={20} height={20} alt="icon" />
+                  </Button>
+                </div>
               </div>
-              <Button className="bg-[#22c55e] text-white hover:bg-[#16a34a] rounded-lg px-6 h-12">
-                <Send className="w-4 h-4 mr-2" />
-                Send
+              <Button className="bg-[#0CAF60] text-white hover:bg-[#16a34a] rounded-[3px] px-4 py-2 cursor-pointer">
+                <Image src={Send} width={20} height={20} alt="icon" />
+                <p className="font-[500] text-sm">Send</p>
               </Button>
             </div>
           </div>
@@ -694,10 +796,10 @@ export default function CompleteDashboard() {
       </div>
 
       {/* Candidate Details Section */}
-      <div className="w-96 bg-white border-l border-[#e2e8f0] overflow-y-auto hide-scrollbar">
+      <div className="w-96 bg-[#F8F7F7] border-l border-[#e2e8f0] overflow-y-auto hide-scrollbar">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#e2e8f0]">
-          <h1 className="text-xl font-bold text-[#1e293b] text-center">
+        <div className="px-6 pt-6 pb-2">
+          <h1 className="text-xl font-[700] text-[#242424] text-center">
             Candidate Details
           </h1>
         </div>
@@ -705,38 +807,38 @@ export default function CompleteDashboard() {
         {/* Profile Section */}
         <div className="px-6 py-6 text-center">
           <div className="relative inline-block mb-4">
-            <Image
-              src="/images/Search.png"
-              alt="Udai Reddy Penuballi"
-              width={80}
-              height={80}
-              className="rounded-full border-4 border-[#22c55e]"
-            />
-            <div className="absolute -bottom-1 -right-1 bg-[#22c55e] rounded-full p-1">
-              <div className="w-3 h-3 bg-white rounded-full flex items-center justify-center">
-                <div className="w-1.5 h-1.5 bg-[#22c55e] rounded-full"></div>
-              </div>
+            <div className="w-[120.73px] h-[122.96px] rounded-full overflow-hidden border-[1.63px] border-[#31B465]">
+              <Image
+                src="/images/profile-pic.jpg"
+                alt="Udai Reddy Penuballi"
+                width={120.73}
+                height={122.96}
+                className="h-full w-full object-cover"
+              />
             </div>
-            <Badge className="absolute -top-2 -right-2 bg-[#22c55e] text-white text-xs px-2 py-1 rounded-full">
+            <div className="absolute bottom-4 right-1">
+              <Image src={Verified} width={21.19} height={21.19} alt="icon" />
+            </div>
+            <Badge className="absolute -bottom-2 left-9 bg-[#E9FAF7] text-[#31B465] text-xs font-[600] px-2 py-1 rounded-[3px]">
               Online
             </Badge>
           </div>
 
-          <h2 className="text-xl font-bold text-[#1e293b] mb-1">
+          <h2 className="text-xl font-[700] text-[#242424] mb-1">
             Udai Reddy Penuballi
           </h2>
-          <p className="text-[#3b82f6] text-sm mb-4">
+          <p className="text-[#25AADF] font-[400] text-xs mb-4">
             Amazon | Senior Product Manager
           </p>
 
-          <div className="flex justify-center space-x-4 mb-6">
-            <Badge className="bg-[#fff7ed] text-[#ea580c] border-[#fed7aa] px-3 py-1">
+          <div className="flex justify-center space-x-4 mb-6 text-xs font-[500]">
+            <Badge className="bg-[#FFF2E6] text-[#FD661F] px-2.5 py-1 rounded-[3.26px]">
               Full Time
             </Badge>
-            <Badge className="bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe] px-3 py-1">
+            <Badge className="bg-[#0961F50F] text-[#0961F5] px-2.5 py-1 rounded-[3.26px]">
               Onsite
             </Badge>
-            <Badge className="bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe] px-3 py-1">
+            <Badge className="bg-[#25AADF0F] text-[#25AADF] px-2.5 py-1 rounded-[3.26px]">
               1-3 Years
             </Badge>
           </div>
@@ -748,10 +850,15 @@ export default function CompleteDashboard() {
                 key={index}
                 variant="ghost"
                 size="icon"
-                className="w-8 h-8 rounded"
+                className="w-8 h-8 rounded-[2.93px]"
                 style={{ backgroundColor: social.color }}
               >
-                <social.icon className="w-4 h-4 text-white" />
+                <Image
+                  src={social.icon}
+                  width={14.64}
+                  height={14.64}
+                  alt="icon"
+                />
               </Button>
             ))}
           </div>
@@ -759,40 +866,57 @@ export default function CompleteDashboard() {
 
         {/* Application Info */}
         <div className="px-6 mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[#6b7280] text-sm">Applied Position:</span>
-            <span className="font-semibold text-[#1e293b]">
+          <div className="flex justify-center items-center mb-2">
+            <span className="text-[#666666] text-sm font-[400]">
+              Applied Position:
+            </span>
+            <div className="w-px h-[13px] border border-[#DCDCDC] mx-1"></div>
+            <span className="font-[500] text-sm text-[#131B33]">
               Front End Developer
             </span>
           </div>
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-[#6b7280] text-sm">Applied Date:</span>
-            <span className="font-semibold text-[#1e293b]">15 Jan 2025</span>
+          <div className="flex justify-center items-center mb-4">
+            <span className="text-[#666666] text-sm font-[400]">
+              Applied Date:
+            </span>
+            <div className="w-px h-[13px] border border-[#DCDCDC] mx-1"></div>
+            <span className="font-[500] text-sm text-[#131B33]">
+              15 Jan 2025
+            </span>
           </div>
 
           {/* Status Badges */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="text-center">
-              <Badge className="bg-[#ea580c] text-white px-4 py-2 rounded-lg w-full mb-1">
-                🔥 Current Stage
+          <div className="flex flex-col items-center mb-6">
+            <div className="flex gap-2 text-center">
+              <Badge className="bg-[#FD683E] text-white px-4 py-2 rounded-[3.01px] mb-1 w-[149.33px] h-[31.01px] flex justify-center items-center cursor-pointer">
+                <Image src={Alarm} width={15.03} height={15.03} alt="icon" />{" "}
+                <span className="font-[600] text-[11px]">Current Stage </span>{" "}
+                <ChevronRight className="w-[7.89px] h-[4.5px]" />
               </Badge>
-              <span className="text-[#3b82f6] text-sm font-medium">
-                Shortlisted
-              </span>
+              <div className="w-[88.2px] h-[30.1px] bg-[#0961F50F]">
+                <span className="text-[#0961F5] text-xs font-[500]">
+                  Shortlisted
+                </span>
+              </div>
             </div>
-            <div className="text-center">
-              <Badge className="bg-[#8b5cf6] text-white px-4 py-2 rounded-lg w-full mb-1">
-                🔮 Upcoming Stage
+
+            <div className="flex gap-2 text-center">
+              <Badge className="bg-[#883DCF] text-white px-4 py-2 rounded-[3.01px] mb-1 w-[149.33px] h-[31.01px] flex justify-center items-center cursor-pointer">
+                <Image src={Alarm} width={15.03} height={15.03} alt="icon" />{" "}
+                <span className="font-[600] text-[11px]">Upcoming Stage </span>{" "}
+                <ChevronRight className="w-[7.89px] h-[4.5px]" />
               </Badge>
-              <span className="text-[#3b82f6] text-sm font-medium">
-                HR Interview
-              </span>
+              <div className="w-[88.2px] h-[30.1px] bg-[#0961F50F]">
+                <span className="text-[#0961F5] text-xs font-[500]">
+                  HR Interview
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Stats Section */}
-        <div className="px-6 mb-6">
+        <div className="mb-6 px-[15px]">
           {statsItems.map((item, index) => (
             <div
               key={index}
@@ -800,18 +924,19 @@ export default function CompleteDashboard() {
             >
               <div className="flex items-center space-x-3">
                 <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: `${item.color}20` }}
+                  className="w-8 h-8 rounded-[8px] flex items-center justify-center"
+                  style={{ backgroundColor: `${item.color}` }}
                 >
-                  <item.icon
-                    className="w-4 h-4"
-                    style={{ color: item.color }}
-                  />
+                  <Image src={item.icon} width={16} height={16} alt="icon" />
                 </div>
-                <span className="text-[#1e293b] font-medium">{item.label}</span>
+                <span className="text-[#1C1C1C] font-[500] text-sm">
+                  {item.label}
+                </span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="font-bold text-[#1e293b]">{item.count}</span>
+                <span className="font-[700] text-xs text-[#1C1C1C] bg-[#EEEDF0] px-2 py-0.5 rounded-full">
+                  {item.count}
+                </span>
                 <ChevronRight className="w-4 h-4 text-[#94a3b8]" />
               </div>
             </div>
@@ -821,31 +946,33 @@ export default function CompleteDashboard() {
         {/* Schedules Section */}
         <div className="px-6 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-[#1e293b]">Schedules</h3>
             <div className="flex items-center space-x-2">
-              <Badge className="bg-[#ef4444] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+              <h3 className="font-[700] text-[15px] text-[#1E293B]">
+                Schedules
+              </h3>
+              <Badge className="bg-[#FFF1F2] border border-[#FFE4E6] rounded-full w-6 h-6 flex items-center justify-center text-xs font-[600] text-[#F43F5E]">
                 25
               </Badge>
-              <ChevronRight className="w-4 h-4 text-[#94a3b8]" />
             </div>
+            <ChevronRight className="w-4 h-4 text-[#94a3b8]" />
           </div>
 
           <Card className="border-[#e2e8f0]">
             <CardContent className="p-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-[#eff6ff] rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-[#3b82f6]" />
+                <div className="w-10 h-10 bg-[#EEF2FF] rounded-lg flex items-center justify-center">
+                  <Image src={Calendar} width={20} height={20} alt="icon" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-[#1e293b] text-sm">
+                  <h4 className="font-[700] text-[#475569] text-[11px]">
                     Upcoming Presentation
                   </h4>
-                  <p className="text-[#6b7280] text-xs">
+                  <p className="text-[#475569] text-[10px] font-[400]">
                     2025/08/12 at 11:21 AM
                   </p>
                 </div>
-                <div className="w-6 h-6 bg-[#f1f5f9] rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-[#94a3b8] rounded-full"></div>
+                <div className="flex items-center justify-center">
+                  <Image src={BellSimple} width={20} height={20} alt="icon" />
                 </div>
               </div>
             </CardContent>
@@ -855,41 +982,51 @@ export default function CompleteDashboard() {
         {/* Notes Section */}
         <div className="px-6 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-[#1e293b]">Notes</h3>
             <div className="flex items-center space-x-2">
-              <Badge className="bg-[#ef4444] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+              <h3 className="font-[700] text-[15px] text-[#1E293B]">Notes</h3>
+              <Badge className="bg-[#FFF1F2] border border-[#FFE4E6] rounded-full w-6 h-6 flex items-center justify-center text-xs font-[600] text-[#F43F5E]">
                 25
               </Badge>
-              <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
             </div>
+            <Image src={ChevronDown} width={16} height={16} alt="icon" />
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-0">
             {[1, 2].map((note) => (
               <Card key={note} className="border-[#e2e8f0]">
                 <CardContent className="p-4">
-                  <div className="flex items-start space-x-3">
-                    <Image
-                      src="/placeholder.svg?height=32&width=32&query=woman profile picture"
-                      alt="Maulida adinda ayu"
-                      width={32}
-                      height={32}
-                      className="rounded-full"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="font-semibold text-[#1e293b] text-sm">
-                          Maulida adinda ayu
-                        </span>
+                  <div className="flex flex-col items-start">
+                    <div className="flex space-x-3 mb-1 pb-2">
+                      <div className="w-10 h-10 bg-[#E8E8E9] rounded-full overflow-hidden cursor-pointer">
+                        <Image
+                          src="/images/avatar-51.png"
+                          alt="Maulida adinda ayu"
+                          width={40}
+                          height={40}
+                          className="object-cover w-full h-full"
+                        />
                       </div>
-                      <p className="text-[#6b7280] text-xs mb-1">
-                        Admin, owner
-                      </p>
-                      <p className="text-[#1e293b] text-sm mb-2">
+
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="font-[500] text-[#161924] text-xs">
+                            Maulida adinda ayu
+                          </span>
+                        </div>
+                        <p className="text-[#73757C] text-[10px] font-[400] mb-1">
+                          Admin, owner
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-[1px] bg-[#e2e8f0]"></div>
+
+                    <div className="mt-1">
+                      <p className="text-[#161924] text-[10px] font-[400] mb-1">
                         We will meeting for this project and deals, we still
                         meting at Monday, 02 January 2025 at 08:30pm.
                       </p>
-                      <span className="text-[#94a3b8] text-xs">
+                      <span className="text-[#73757C] text-[10px] font-[400]">
                         5 minute ago
                       </span>
                     </div>
@@ -903,17 +1040,17 @@ export default function CompleteDashboard() {
         {/* Activities Section */}
         <div className="px-6 pb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-[#1e293b]">Activities</h3>
             <div className="flex items-center space-x-2">
-              <Badge className="bg-[#ef4444] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+              <h3 className="font-[700] text-[15px] text-[#1E293B]">Activities</h3>
+              <Badge className="bg-[#FFF1F2] border border-[#FFE4E6] rounded-full w-6 h-6 flex items-center justify-center text-xs font-[600] text-[#F43F5E]">
                 25
               </Badge>
-              <ChevronDown className="w-4 h-4 text-[#94a3b8]" />
             </div>
+            <Image src={ChevronDown} width={16} height={16} alt="icon" />
           </div>
 
           <div className="mb-2">
-            <span className="text-[#94a3b8] text-sm">Today</span>
+            <span className="text-[#A2A4AC] text-xs font-[400]">Today</span>
           </div>
 
           <div className="space-y-3">
