@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Poppins } from "next/font/google";
+import NextAuthProvider from "@/context/NextAuthProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,12 +32,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${poppins.variable} font-sans antialiased`}
-      >
-        {children}
+      <body className={`${poppins.variable} font-sans antialiased`}>
+        <NextAuthProvider>{children}</NextAuthProvider>
       </body>
     </html>
   );
 }
-
