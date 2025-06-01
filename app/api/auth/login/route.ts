@@ -73,7 +73,6 @@ const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.access_token = user.access_token; // Store access_token in JWT
       }
       return token;
     },
@@ -81,7 +80,6 @@ const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
-        session.user.access_token = token.access_token as string; // Add access_token to session
       }
       return session;
     },

@@ -1,6 +1,6 @@
 "use client";
 
-import { Facebook, ChevronRight, FileText, Tag } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,12 +52,12 @@ import {
   Star,
   Img,
   AtSign,
-  CalendarBlank,
   BellSimple,
   AlertCircle,
   File,
   Calendar,
 } from "@/public/icons/index";
+import { signOut } from "next-auth/react";
 
 const conversations = [
   {
@@ -291,26 +291,39 @@ export default function CompleteDashboard() {
         </div>
 
         {/* Navigation Icons */}
-        {sidebarItems.map((item, index) => (
-          <Button
-            key={index}
-            variant="ghost"
-            size="icon"
-            className={`w-full rounded-none h-10 cursor-pointer ${
-              item.isActive
-                ? "bg-[#F2F2F9] border-l-4 border-[#0961F5]"
-                : "hover:bg-[#f2f2f9]"
-            }`}
-          >
-            <Image
-              src={item.icon}
-              width={24}
-              height={24}
-              style={{ color: item.color }}
-              alt="icon"
-            />
-          </Button>
-        ))}
+        {sidebarItems.map((item, index) => {
+          const isLogout = item.icon === Logout;
+
+          return (
+            <Button
+              key={index}
+              variant="ghost"
+              size="icon"
+              onClick={
+                isLogout
+                  ? () =>
+                      signOut({
+                        callbackUrl: "/",
+                        redirect: true,
+                      })
+                  : undefined
+              }
+              className={`w-full rounded-none h-10 cursor-pointer ${
+                item.isActive
+                  ? "bg-[#F2F2F9] border-l-4 border-[#0961F5]"
+                  : "hover:bg-[#f2f2f9]"
+              }`}
+            >
+              <Image
+                src={item.icon}
+                width={24}
+                height={24}
+                style={{ color: item.color }}
+                alt="icon"
+              />
+            </Button>
+          );
+        })}
 
         {/* Profile at bottom */}
         <div className="mt-auto">

@@ -2,9 +2,9 @@ import SignUpForm from "@/components/auth/sign-up-form";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sign Up - Near Me",
+  title: "Sign Up - HireVitae",
   description:
-    "Create an account to start managing your business",
+    "Create your account on HireVitae to start connecting with top talent and opportunities.",
 };
 
 export default function SignUpPage() {
