@@ -1,14 +1,14 @@
-import type { NextAuthOptions } from "next-auth";
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import type { NextAuthOptions } from "next-auth"
+import NextAuth from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
+import { prisma } from "@/lib/prisma"
+import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
 
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      id: "credentials", // Changed from "oat" to "credentials"
+      id: "credentials",
       name: "credentials",
       credentials: {
         email: {
@@ -21,43 +21,38 @@ const authOptions: NextAuthOptions = {
 
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email and password required");
+          throw new Error("Email and password required")
         }
 
         try {
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
-          });
+          })
 
           if (!user) {
-            throw new Error("Invalid credentials");
+            throw new Error("Invalid credentials")
           }
 
-          const isValidPassword = await bcrypt.compare(
-            credentials.password,
-            user.password
-          );
+          const isValidPassword = await bcrypt.compare(credentials.password, user.password)
+
           if (!isValidPassword) {
-            throw new Error("Invalid credentials");
+            throw new Error("Invalid credentials")
           }
 
-          const access_token = jwt.sign(
-            { userId: user.id },
-            process.env.NEXTAUTH_SECRET!,
-            { expiresIn: "7d" }
-          );
+          // Generate access_token to satisfy your custom User type
+          const access_token = jwt.sign({ userId: user.id }, process.env.NEXTAUTH_SECRET!, { expiresIn: "7d" })
 
           return {
             id: user.id.toString(),
             email: user.email,
             name: user.name ?? "",
-            access_token,
+            access_token, // Include this to match your User type
             createdAt: user.createdAt?.toISOString(),
             updatedAt: user.updatedAt?.toISOString(),
-          };
+          }
         } catch (error) {
-          console.error("Auth error:", error);
-          throw new Error("Authentication failed");
+          console.error("Auth error:", error)
+          throw new Error("Authentication failed")
         }
       },
     }),
@@ -65,25 +60,24 @@ const authOptions: NextAuthOptions = {
 
   pages: {
     signIn: "/login",
-    signOut: "/logout",
     error: "/error",
   },
 
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.access_token = user.access_token; // Store access_token in JWT
+        token.id = user.id
+        token.access_token = user.access_token // Store access_token in JWT
       }
-      return token;
+      return token
     },
 
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.access_token = token.access_token as string; // Add access_token to session
+      if (token && session.user) {
+        session.user.id = token.id as string
+        session.user.access_token = token.access_token as string // Add access_token to session
       }
-      return session;
+      return session
     },
   },
 
@@ -93,8 +87,8 @@ const authOptions: NextAuthOptions = {
   },
 
   secret: process.env.NEXTAUTH_SECRET,
-};
+}
 
-const handler = NextAuth(authOptions);
+const handler = NextAuth(authOptions)
 
-export { handler as GET, handler as POST };
+export { handler as GET, handler as POST }

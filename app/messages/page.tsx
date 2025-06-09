@@ -273,7 +273,7 @@ const activities = [
 
 export default function CompleteDashboard() {
   return (
-    <div className="flex h-screen my-3 bg-[#f8fafc] w-[1440px] mx-auto">
+    <div className="flex h-screen my-0 bg-[#f8fafc] w-[1440px] mx-auto">
       <style jsx global>{`
         .hide-scrollbar {
           -ms-overflow-style: none;
@@ -370,6 +370,7 @@ export default function CompleteDashboard() {
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#475569]"
             />
             <Input
+              type="text"
               placeholder="Search..."
               className="pl-10 bg-[#FFFFFF] border border-[#CBD5E1] rounded-full h-12 text-[#475569] text-base font-[500]"
             />
@@ -378,11 +379,11 @@ export default function CompleteDashboard() {
 
         {/* Conversations List */}
         <div className="flex-1 overflow-y-auto hide-scrollbar">
-          {conversations.map((conversation) => (
+          {conversations.map((Conversation) => (
             <div
-              key={conversation.id}
+              key={Conversation.id}
               className={`flex items-center px-6 py-4 hover:bg-[#f8fafc] cursor-pointer border-b border-[#f2f2f9] relative ${
-                conversation.online && conversation.unread > 0
+                Conversation.online && Conversation.unread > 0
                   ? " border-l-2 border-l-[#6e6af0]"
                   : "bg-[#FFFFFF]"
               }`}
@@ -390,13 +391,13 @@ export default function CompleteDashboard() {
               {/* Avatar */}
               <div className="relative mr-3">
                 <Image
-                  src={conversation.avatar || "/placeholder.svg"}
-                  alt={conversation.name}
+                  src={Conversation.avatar || "/images/avatar-47.png"}
+                  alt={Conversation.name}
                   width={48}
                   height={48}
                   className="rounded-full"
                 />
-                {conversation.online ? (
+                {Conversation?.online ? (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#22C55E] border-2 border-white rounded-full"></div>
                 ) : (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#CBD5E1] border-2 border-white rounded-full"></div>
@@ -407,24 +408,24 @@ export default function CompleteDashboard() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="font-[700] text-[#1E293B] truncate text-base">
-                    {conversation.name}
+                    {Conversation.name}
                   </h3>
                   <span className="text-xs text-[##5F5F5F] ml-2 font-[400]">
-                    {conversation.time}
+                    {Conversation.time}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <p
                     className={`truncate ${
-                      conversation.isTyping
+                      Conversation.isTyping
                         ? "text-[#24D059] font-[400] text-xs"
                         : "text-[#475569] text-sm font-[500]"
                     }`}
                   >
-                    {conversation.message}
+                    {Conversation.message}
                   </p>
                   <div className="flex items-center space-x-2 ml-2">
-                    {conversation.hasCheckmark && (
+                    {Conversation.hasCheckmark && (
                       <div className="text-[#22c55e]">
                         <Image
                           src={SeenCheckmark}
@@ -434,15 +435,15 @@ export default function CompleteDashboard() {
                         />
                       </div>
                     )}
-                    {conversation.unread > 0 && (
+                    {Conversation.unread > 0 && (
                       <Badge
                         className={`${
-                          conversation.online
+                          Conversation.online
                             ? "bg-[#4F46E5] text-white"
                             : "bg-[#E2E8F0] text-black"
                         } rounded-full min-w-[20px] h-5 text-xs flex items-center justify-center`}
                       >
-                        {conversation.unread}
+                        {Conversation.unread}
                       </Badge>
                     )}
                   </div>

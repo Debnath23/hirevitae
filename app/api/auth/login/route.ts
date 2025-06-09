@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      id: "credentials", // Changed from "oat" to "credentials"
+      id: "credentials",
       name: "credentials",
       credentials: {
         email: {

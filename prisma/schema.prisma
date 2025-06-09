@@ -8,10 +8,61 @@ datasource db {
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  name     String?
-  email    String  @unique
-  password String
+  id        Int       @id @default(autoincrement())
+  name      String    @unique @db.VarChar(255)
+  email     String    @unique @db.VarChar(255)
+  password  String    @db.VarChar(255)
+  avatar    String?   @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  sentMessages     Message[] @relation("MessageSender")
+  receivedMessages Message[] @relation("MessageReceiver")
+  reactions        Reaction[]
+
+  @@map("users")
+}
+
+model Message {
+  id               Int        @id @default(autoincrement())
+  text             String?    @db.Text
+  emojiCodes       Json?
+  fileUrl          String?    @db.Text
+  fileType         String?    @db.VarChar(100)
+  fileSize         Int?
+  fileName         String?    @db.VarChar(255)
+  senderId         Int
+  receiverId       Int
+  replyToMessageId Int?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  
+  sender           User       @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver         User       @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  replyToMessage   Message?   @relation("MessageReplies", fields: [replyToMessageId], references: [id])
+  replies          Message[]  @relation("MessageReplies")
+  reactions        Reaction[]
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([replyToMessageId])
+  @@map("messages")
+}
+
+model Reaction {
+  id        Int      @id @default(autoincrement())
+  messageId Int
+  userId    Int
+  emojiId   String   @db.VarChar(50)  // Store emoji-mart emoji id
+  emojiNative String @db.VarChar(10)  // Store the actual emoji character
+  emojiName String   @db.VarChar(100) // Store emoji name for accessibility
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emojiId])
+  @@index([messageId])
+  @@index([userId])
+  @@map("reactions")
 }
