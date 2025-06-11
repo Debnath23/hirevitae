@@ -67,7 +67,16 @@ const activities = [
 ];
 
 function CandidateDetailsSection() {
-    const { selectedUser } = useChatStore();
+  const { selectedUser } = useChatStore();
+
+  if (!selectedUser) {
+    return (
+      <div className="w-96 bg-[#F8F7F7] border-l border-[#e2e8f0] h-full flex items-center justify-center">
+        <p className="text-gray-500 font-[500]">No candidate selected</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-96 bg-[#F8F7F7] border-l border-[#e2e8f0] overflow-y-auto hide-scrollbar">
       {/* Header */}

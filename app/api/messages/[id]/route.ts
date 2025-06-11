@@ -1,11 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -15,7 +14,7 @@ export async function GET(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const senderId = Number(session.user.id);
+    const senderId = Number.parseInt(session.user.id);
 
     if (isNaN(senderId)) {
       return NextResponse.json(
@@ -24,7 +23,7 @@ export async function GET(
       );
     }
 
-    const recipientId = Number(params.id);
+    const recipientId = Number.parseInt(params.id);
 
     if (isNaN(recipientId)) {
       return NextResponse.json(
@@ -46,7 +45,6 @@ export async function GET(
             id: true,
             name: true,
             email: true,
-            avatar: true,
           },
         },
         receiver: {
@@ -54,31 +52,6 @@ export async function GET(
             id: true,
             name: true,
             email: true,
-            avatar: true,
-          },
-        },
-        replyToMessage: {
-          include: {
-            sender: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                avatar: true,
-              },
-            },
-          },
-        },
-        reactions: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                avatar: true,
-              },
-            },
           },
         },
       },

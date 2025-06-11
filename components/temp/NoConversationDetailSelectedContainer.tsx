@@ -1,5 +1,5 @@
-import { MessageSquare } from 'lucide-react'
-import React from 'react'
+import React from "react";
+import Image from "next/image";
 
 function NoConversationDetailSelectedContainer() {
   return (
@@ -12,19 +12,25 @@ function NoConversationDetailSelectedContainer() {
               className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center
              justify-center animate-bounce"
             >
-              <MessageSquare className="w-8 h-8 text-primary " />
+              <Image
+                src="/logo.png"
+                width={32}
+                height={32}
+                alt="logo"
+                className="w-8 h-8 text-primary "
+              />
             </div>
           </div>
         </div>
 
         {/* Welcome Text */}
-        <h2 className="text-2xl font-bold">Welcome to Chatty!</h2>
+        <h2 className="text-2xl font-bold">Welcome to HireVitae!</h2>
         <p className="text-base-content/60">
           Select a conversation from the sidebar to start chatting
         </p>
       </div>
     </div>
-  )
+  );
 }
 
-export default NoConversationDetailSelectedContainer
+export default NoConversationDetailSelectedContainer;

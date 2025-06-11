@@ -8,61 +8,99 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique @db.VarChar(255)
-  email     String    @unique @db.VarChar(255)
-  password  String    @db.VarChar(255)
-  avatar    String?   @db.Text
+  id               Int       @id @default(autoincrement())
+  logo             String?
+  banner           String?
+  name             String
+  email            String    @unique
+  password         String
+  user_type        Int?      @default(0) // 0=candidate, 1=employer
+  phone            String?
+  website          String?
+  founded_date     DateTime? @db.Date
+  gender           Int?      // 0=male, 1=female, etc.
+  qualification    Int?      // 0=certificate, 1=associate degree, etc.
+  experience       Int?      // 0=fresh, [number] years
+  languages        String?   // Stored as JSON
+  salary_type      Int?      // 0=hourly, 1=daily, etc.
+  salary           Int?
+  job_title        String?
+  company_size     Int?
+  categories       String?   // Stored as JSON
+  intro            String?
+  profile_id       String?    @unique
+  about            String?
+  vision           String?
+  skill_occupation String?
+  portfolio_images String?   // Stored as JSON
+  social_networks  String?   // Stored as JSON
+  address          String?
+  city             String?
+  latitude         String?
+  longitude        String?
+  career_status    Int       @default(1) // 1=actively searching, etc.
+  show_profile     Int       @default(0) // 0=show, 1=hide
+  socket_ids       String ?   // Stored as JSON
+  online           Int       @default(0) // 0=offline, 1=online
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   
   sentMessages     Message[] @relation("MessageSender")
   receivedMessages Message[] @relation("MessageReceiver")
-  reactions        Reaction[]
 
-  @@map("users")
+  @@map("user")
 }
 
 model Message {
   id               Int        @id @default(autoincrement())
   text             String?    @db.Text
-  emojiCodes       Json?
-  fileUrl          String?    @db.Text
-  fileType         String?    @db.VarChar(100)
-  fileSize         Int?
-  fileName         String?    @db.VarChar(255)
+  
+  // Text formatting fields
+  bold             Boolean    @default(false)
+  italic           Boolean    @default(false)
+  underline        Boolean    @default(false)
+  
+  // List formatting fields
+  unorderedList    Boolean    @default(false)
+  orderedList      Boolean    @default(false)
+  
+  // Font styling fields
+  fontSize         String     @default("14") @db.VarChar(10)
+  
+  // Link fields
+  linkTitle        String?    @db.Text
+  linkTarget       String?    @db.Text
+  
+  // Emoji field
+  emoji            String?    @db.VarChar(10)
+  
+  // Image field
+  imageName        String?    @db.Text
+  imageUrl         String?    @db.Text
+  
+  // Code block fields
+  codeLanguage     String?    @db.VarChar(50)
+  codeContent      String?    @db.Text
+  
+  // Message status
+  seen             Int        @default(0) @db.Int // 0=not seen, 1=seen
+  
+  // Foreign keys
   senderId         Int
   receiverId       Int
-  replyToMessageId Int?
+
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
-  
+
+  // Relations
   sender           User       @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
   receiver         User       @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  replyToMessage   Message?   @relation("MessageReplies", fields: [replyToMessageId], references: [id])
-  replies          Message[]  @relation("MessageReplies")
-  reactions        Reaction[]
 
+  // Indexes
   @@index([senderId])
   @@index([receiverId])
-  @@index([replyToMessageId])
-  @@map("messages")
-}
-
-model Reaction {
-  id        Int      @id @default(autoincrement())
-  messageId Int
-  userId    Int
-  emojiId   String   @db.VarChar(50)  // Store emoji-mart emoji id
-  emojiNative String @db.VarChar(10)  // Store the actual emoji character
-  emojiName String   @db.VarChar(100) // Store emoji name for accessibility
-  createdAt DateTime @default(now())
-  
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([messageId, userId, emojiId])
-  @@index([messageId])
-  @@index([userId])
-  @@map("reactions")
+  @@index([createdAt])
+  @@index([seen])
+  @@map("message")
 }
