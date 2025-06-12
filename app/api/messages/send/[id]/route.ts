@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -9,13 +9,12 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const senderId = Number.parseInt(session?.user?.id);
-    const receiverId = Number.parseInt(params.id);
+    const senderId = Number(session.user.id);
+    const receiverId = Number(params.id);
 
     if (isNaN(receiverId)) {
       return NextResponse.json(
@@ -24,29 +23,58 @@ export async function POST(
       );
     }
 
+    if (isNaN(senderId)) {
+      return NextResponse.json(
+        { message: "Invalid sender ID" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
-    const { content, formatting, selectedUser } = body;
+    if (!body.content) {
+      return NextResponse.json(
+        { message: "Missing required fields" },
+        { status: 400 }
+      );
+    }
 
     const messageData = {
-      text: content,
-      bold: formatting.bold || false,
-      italic: formatting.italic || false,
-      underline: formatting.underline || false,
-      unorderedList: formatting.unorderedList || false,
-      orderedList: formatting.orderedList || false,
-      fontSize: formatting.fontSize || "14",
-      linkTitle: formatting.linkTitle || null,
-      linkTarget: formatting.linkTarget || null,
-      emoji: formatting.emoji || null,
-      imageUrl: formatting.imageUrl || null,
-      codeLanguage: formatting.codeLanguage || null,
-      codeContent: formatting.codeContent || null,
-      receiverId: selectedUser.id,
+      text: body.content,
+      bold: body.formatting?.bold || false,
+      italic: body.formatting?.italic || false,
+      underline: body.formatting?.underline || false,
+      unorderedList: body.formatting?.unorderedList || false,
+      orderedList: body.formatting?.orderedList || false,
+      fontSize: body.formatting?.fontSize || "14",
+      linkTitle: body.formatting?.linkTitle || null,
+      linkTarget: body.formatting?.linkTarget || null,
+      emoji: body.formatting?.emoji || null,
+      imageName: body.formatting?.imageName || null,
+      imageUrl: body.formatting?.imageUrl || null,
+      codeLanguage: body.formatting?.codeLanguage || null,
+      codeContent: body.formatting?.codeContent || null,
+      receiverId: receiverId,
       senderId: senderId,
     };
 
     const message = await prisma.message.create({
       data: messageData,
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        receiver: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(message, { status: 201 });

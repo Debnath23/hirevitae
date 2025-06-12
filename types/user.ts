@@ -1,8 +1,8 @@
-export interface User {
-  id: number;
+interface User {
+  _id: string;
+  id: string;
+  name: string;
   email: string;
-  name: string | null;
-  avatar?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  avatar?: string;
+  isOnline?: boolean;
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { EditorState, RichUtils, Modifier } from "draft-js";
+import { EditorState, RichUtils } from "draft-js";
 import { Editor } from "draft-js";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,8 +39,8 @@ import {
   Photo,
   Send,
 } from "@/public/icons/index";
-import { Type } from "lucide-react";
 import "draft-js/dist/Draft.css";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const EMOJI_LIST = [
   "😀",
@@ -161,7 +161,6 @@ export default function MessageComposer() {
   const [emojiPopoverOpen, setEmojiPopoverOpen] = useState(false);
   const [codeBlockDialogOpen, setCodeBlockDialogOpen] = useState(false);
 
-  // Get store state and actions
   const {
     selectedUser,
     formatting,
@@ -179,17 +178,37 @@ export default function MessageComposer() {
     setCodeLanguage,
     setCodeContent,
     sendFormattedMessage,
+    initializeSocket,
+    socketConnected,
+    subscribeToMessages,
   } = useChatStore();
+  const { authUser } = useAuthStore();
+
+  useEffect(() => {
+    if (authUser?.id) {
+      const init = async () => {
+        try {
+          await initializeSocket(authUser.id);
+
+          if (socketConnected) {
+            await subscribeToMessages();
+          }
+        } catch (error) {
+          console.error("Socket initialization failed:", error);
+        }
+      };
+
+      init();
+    }
+  }, [authUser?.id, initializeSocket, socketConnected, subscribeToMessages]);
 
   const handleEditorChange = (state: EditorState) => {
     setEditorState(state);
   };
 
   const handleToggleInlineStyle = (style: string) => {
-    // Update Draft.js editor state
     setEditorState(RichUtils.toggleInlineStyle(editorState, style));
 
-    // Update store state
     switch (style) {
       case "BOLD":
         toggleBold();
@@ -206,7 +225,6 @@ export default function MessageComposer() {
   const handleToggleBlockType = (blockType: string) => {
     setEditorState(RichUtils.toggleBlockType(editorState, blockType));
 
-    // Update store state
     if (blockType === "unordered-list-item") {
       toggleUnorderedList();
     } else if (blockType === "ordered-list-item") {
@@ -218,6 +236,12 @@ export default function MessageComposer() {
     const content = editorState.getCurrentContent().getPlainText();
 
     if (!content.trim()) {
+      console.log("Cannot send empty message");
+      return;
+    }
+
+    if (!selectedUser) {
+      console.error("No user selected");
       return;
     }
 
