@@ -28,7 +28,7 @@ model User {
   company_size     Int?
   categories       String?   // Stored as JSON
   intro            String?
-  profile_id       String?    @unique
+  profile_id       String?   @unique
   about            String?
   vision           String?
   skill_occupation String?
@@ -40,62 +40,74 @@ model User {
   longitude        String?
   career_status    Int       @default(1) // 1=actively searching, etc.
   show_profile     Int       @default(0) // 0=show, 1=hide
-  socket_ids       String ?   // Stored as JSON
+  socket_ids       String?   // Stored as JSON
   online           Int       @default(0) // 0=offline, 1=online
+  avatar           String?   // User avatar URL
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User can send and receive messages (both regular and reply messages)
+  sentMessages     Message[]  @relation("MessageSender")
+  receivedMessages Message[]  @relation("MessageReceiver")
   
-  sentMessages     Message[] @relation("MessageSender")
-  receivedMessages Message[] @relation("MessageReceiver")
+  // User can add emoji reactions to messages
+  reactions        Reaction[]
 
   @@map("user")
 }
 
 model Message {
-  id               Int        @id @default(autoincrement())
-  text             String?    @db.Text
+  id            Int      @id @default(autoincrement())
+  text          String?  @db.Text
+  
+  // For reply messages: stores reference to the original message
+  // Both regular messages and reply messages are stored in this table
+  metadata      String?  @db.Text // JSON: { replyToId, replyToSenderId, replyToContent }
   
   // Text formatting fields
-  bold             Boolean    @default(false)
-  italic           Boolean    @default(false)
-  underline        Boolean    @default(false)
+  bold          Boolean  @default(false)
+  italic        Boolean  @default(false)
+  underline     Boolean  @default(false)
   
   // List formatting fields
-  unorderedList    Boolean    @default(false)
-  orderedList      Boolean    @default(false)
+  unorderedList Boolean  @default(false)
+  orderedList   Boolean  @default(false)
   
   // Font styling fields
-  fontSize         String     @default("14") @db.VarChar(10)
+  fontSize      String   @default("14") @db.VarChar(10)
   
   // Link fields
-  linkTitle        String?    @db.Text
-  linkTarget       String?    @db.Text
+  linkTitle     String?  @db.Text
+  linkTarget    String?  @db.Text
   
   // Emoji field
-  emoji            String?    @db.VarChar(10)
+  emoji         String?  @db.VarChar(10)
   
   // Image field
-  imageName        String?    @db.Text
-  imageUrl         String?    @db.Text
+  imageName     String?  @db.Text
+  imageUrl      String?  @db.Text
   
   // Code block fields
-  codeLanguage     String?    @db.VarChar(50)
-  codeContent      String?    @db.Text
+  codeLanguage  String?  @db.VarChar(50)
+  codeContent   String?  @db.Text
   
   // Message status
-  seen             Int        @default(0) @db.Int // 0=not seen, 1=seen
+  seen          Int      @default(0) @db.Int // 0=not seen, 1=seen
   
   // Foreign keys
-  senderId         Int
-  receiverId       Int
+  senderId      Int
+  receiverId    Int
 
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
-  sender           User       @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver         User       @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender        User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver      User     @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  // A message can have multiple emoji reactions
+  reactions     Reaction[]
 
   // Indexes
   @@index([senderId])
@@ -103,4 +115,34 @@ model Message {
   @@index([createdAt])
   @@index([seen])
   @@map("message")
+}
+
+model Reaction {
+  id          Int      @id @default(autoincrement())
+  
+  // Reference to the message (can be a regular message or a reply message)
+  messageId   Int
+  
+  // User who added the reaction
+  userId      Int
+  
+  // Emoji-only reaction data
+  emojiId     String   // Unique identifier for the emoji
+  emojiNative String   // The actual emoji character (e.g., "👍")
+  emojiName   String   // Name of the emoji (e.g., "thumbs_up")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([messageId])
+  @@index([userId])
+  
+  // Ensure a user can only react once with the same emoji to a message
+  @@unique([messageId, userId, emojiId])
+  @@map("reaction")
 }
