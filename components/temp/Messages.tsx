@@ -1,135 +1,172 @@
-// "use client";
+// "use client"
 
-// import { useEffect, useRef } from "react";
-// import Image from "next/image";
-// import { Button } from "@/components/ui/button";
-// import { useChatStore } from "@/store/useChatStore";
-// import { useAuthStore } from "@/store/useAuthStore";
-// import { Smile, Check, CheckCheck } from "lucide-react";
-// import {
-//   DeviceMobileCamera,
-//   Emoji1,
-//   Emoji2,
-//   Emoji3,
-//   FileImage,
-//   FolderOpen,
-//   LinkSimple,
-// } from "@/public/icons/index";
+// import type React from "react"
+// import { useEffect, useRef, useState } from "react"
+// import Image from "next/image"
+// import { Button } from "@/components/ui/button"
+// import { Badge } from "@/components/ui/badge"
+// import { useChatStore } from "@/store/useChatStore"
+// import { useAuthStore } from "@/store/useAuthStore"
+// import { Reply, Trash2 } from "lucide-react"
+// import { DeviceMobileCamera, Emoji1, Emoji2, Emoji3, FileImage, LinkSimple, TablerCode } from "@/public/icons"
+// import formatMessageTime from "@/lib/format-message-time"
+// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
+// import { Label } from "../ui/label"
 
-// // Format time
-// function formatMessageTime(dateString: string): string {
-//   const date = new Date(dateString);
-//   const now = new Date();
-//   const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-//   return diffInHours < 24
-//     ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-//     : date.toLocaleDateString();
+// interface EmojiReaction {
+//   id: string
+//   emoji: string
+//   name: string
 // }
 
-// // API message type
-// interface ApiMessage {
-//   id: number;
-//   text: string;
-//   bold: boolean;
-//   italic: boolean;
-//   underline: boolean;
-//   unorderedList: boolean;
-//   orderedList: boolean;
-//   fontSize: string;
-//   linkTitle: string | null;
-//   linkTarget: string | null;
-//   emoji: string | null;
-//   imageName: string | null;
-//   imageUrl: string | null;
-//   codeLanguage: string | null;
-//   codeContent: string | null;
-//   seen: number;
-//   senderId: number;
-//   receiverId: number;
-//   createdAt: string;
-//   updatedAt: string;
-//   sender: {
-//     id: number;
-//     name: string;
-//     email: string;
-//   };
-//   receiver: {
-//     id: number;
-//     name: string;
-//     email: string;
-//   };
-//   reactions?: {
-//     emoji: {
-//       native: string;
-//     };
-//     count: number;
-//   }[];
-// }
+// const emojiReactions: EmojiReaction[] = [
+//   { id: "1", emoji: "👍", name: "thumbsUp" },
+//   { id: "2", emoji: "❤️", name: "heart" },
+//   { id: "3", emoji: "😊", name: "smile" },
+// ]
 
 // function Messages() {
 //   const {
 //     messages,
 //     getMessages,
 //     selectedUser,
+//     initializeSocket,
 //     subscribeToMessages,
 //     unsubscribeFromMessages,
 //     addReaction,
 //     isMessagesLoading,
-//     isTyping,
-//   } = useChatStore();
+//     socketConnected,
+//     socketConnecting,
+//     socketError,
+//     retrySocketConnection,
+//     setReplyToMessage,
+//   } = useChatStore()
 
-//   const { authUser } = useAuthStore();
-//   const messageEndRef = useRef<HTMLDivElement>(null);
+//   const { authUser, checkAuth } = useAuthStore()
+//   const messageEndRef = useRef<HTMLDivElement>(null)
+//   const [activeMessageId, setActiveMessageId] = useState<number | null>(null)
+//   const [showReactionMenu, setShowReactionMenu] = useState(false)
+//   const [showActionMenu, setShowActionMenu] = useState(false)
+//   const [codeBlockDialogOpen, setCodeBlockDialogOpen] = useState(false)
 
-//   // Fetch and subscribe
+//   // Initialize socket when authUser is available
 //   useEffect(() => {
-//     if (!selectedUser?.id) return;
-//     getMessages(selectedUser.id);
-//     subscribeToMessages();
-//     return () => unsubscribeFromMessages();
-//   }, [selectedUser?.id]);
+//     checkAuth()
+//     if (authUser?.id && !socketConnected && !socketConnecting && !socketError) {
+//       initializeSocket(authUser.id)
+//     }
+//   }, [socketConnected, socketConnecting, socketError, initializeSocket, checkAuth])
+
+//   // Fetch messages and subscribe when user is selected AND socket is ready
+//   useEffect(() => {
+//     if (!selectedUser?.id) return
+
+//     getMessages(selectedUser.id)
+
+//     if (socketConnected) {
+//       subscribeToMessages()
+//     } else {
+//       console.log("Socket not connected, skipping subscription")
+//     }
+
+//     return () => {
+//       unsubscribeFromMessages()
+//     }
+//   }, [selectedUser?.id, socketConnected, subscribeToMessages, unsubscribeFromMessages, getMessages])
+
+//   // Subscribe to socket events when socket becomes connected
+//   useEffect(() => {
+//     if (socketConnected && selectedUser?.id) {
+//       subscribeToMessages()
+//     }
+//   }, [socketConnected, selectedUser?.id, subscribeToMessages])
 
 //   // Scroll to latest message
 //   useEffect(() => {
 //     if (messageEndRef.current && messages.length > 0) {
-//       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+//       messageEndRef.current.scrollIntoView({ behavior: "smooth" })
 //     }
-//   }, [messages]);
+//   }, [messages])
 
-//   const handleAddReaction = async (messageId: string, emoji: string) => {
-//     await addReaction(messageId, {
-//       id: emoji,
-//       native: emoji,
-//       name: emoji,
-//     });
-//   };
+//   // Close menus when clicking outside
+//   useEffect(() => {
+//     const handleClickOutside = () => {
+//       setShowReactionMenu(false)
+//       setShowActionMenu(false)
+//       setActiveMessageId(null)
+//     }
 
-//   const parseMessageText = (
-//     text: string,
-//     linkTitle: string | null,
-//     imageUrl: string | null
-//   ) => {
-//     let cleanText = text;
-//     if (linkTitle && text.includes(linkTitle)) {
-//       cleanText = cleanText.replace(linkTitle, "").trim();
+//     document.addEventListener("click", handleClickOutside)
+//     return () => {
+//       document.removeEventListener("click", handleClickOutside)
 //     }
-//     if (imageUrl && text.includes("[Image:")) {
-//       cleanText = cleanText.replace(/\[Image:.*?\]/g, "").trim();
+//   }, [])
+
+//   const handleAddReaction = async (messageId: string, emoji: EmojiReaction) => {
+//     try {
+//       await addReaction(messageId, {
+//         id: emoji.id,
+//         native: emoji.emoji,
+//         name: emoji.name,
+//       })
+//       setShowReactionMenu(false)
+//       setActiveMessageId(null)
+//     } catch (error) {
+//       console.error("Failed to add reaction:", error)
 //     }
-//     return cleanText;
-//   };
+//   }
+
+//   const handleRetryConnection = () => {
+//     if (authUser?.id) {
+//       retrySocketConnection(authUser.id)
+//     }
+//   }
+
+//   const handleReply = (message: any) => {
+//     setReplyToMessage(message)
+//     setShowActionMenu(false)
+//     setActiveMessageId(null)
+//     // Focus the message input
+//     const messageInput = document.querySelector(".DraftEditor-root")
+//     if (messageInput) {
+//       ;(messageInput as HTMLElement).focus()
+//     }
+//   }
+
+//   const parseMessageText = (text: string, linkTitle: string | null, imageUrl: string | null) => {
+//     let cleanText = text
+//     if (linkTitle && text && text.includes(linkTitle)) {
+//       cleanText = cleanText.replace(linkTitle, "").trim()
+//     }
+//     if (imageUrl && text && text.includes("[Image:")) {
+//       cleanText = cleanText.replace(/\[Image:.*?\]/g, "").trim()
+//     }
+//     return cleanText
+//   }
+
+//   const toggleReactionMenu = (e: React.MouseEvent, messageId: number) => {
+//     e.stopPropagation()
+//     setActiveMessageId(messageId)
+//     setShowReactionMenu(true)
+//     setShowActionMenu(false)
+//   }
+
+//   const toggleActionMenu = (e: React.MouseEvent, messageId: number) => {
+//     e.stopPropagation()
+//     setActiveMessageId(messageId)
+//     setShowActionMenu(true)
+//     setShowReactionMenu(false)
+//   }
 
 //   if (!selectedUser) {
 //     return (
 //       <div className="flex-1 flex items-center justify-center">
 //         <div className="text-center">
 //           <h3 className="text-lg font-medium">Select a conversation</h3>
-//           <p className="text-muted-foreground">
-//             Choose a contact to start messaging
-//           </p>
+//           <p className="text-muted-foreground">Choose a contact to start messaging</p>
 //         </div>
 //       </div>
-//     );
+//     )
 //   }
 
 //   if (isMessagesLoading) {
@@ -140,277 +177,372 @@
 //           <p className="text-muted-foreground">Loading messages...</p>
 //         </div>
 //       </div>
-//     );
+//     )
 //   }
 
 //   return (
 //     <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-4 space-y-6">
-//       {isTyping && (
-//         <div className="flex justify-start">
-//           <div className="bg-gray-100 rounded-lg px-4 py-2">
-//             <div className="flex space-x-1">
-//               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-//               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-//               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-
 //       {messages.map((message: any, index: number) => {
-//         const apiMessage = message as ApiMessage;
 //         const isOwnMessage =
-//           apiMessage.senderId === authUser?.id ||
-//           apiMessage.senderId === Number(authUser?.id);
+//           message.senderId === authUser?.id ||
+//           message.senderId === Number(authUser?.id) ||
+//           message.sender?.id === authUser?.id ||
+//           message.sender?.id === Number(authUser?.id)
 
-//         const senderName = apiMessage.sender?.name || "Unknown User";
-//         const cleanMessageText = parseMessageText(
-//           apiMessage.text,
-//           apiMessage.linkTitle,
-//           apiMessage.imageUrl
-//         );
+//         const senderName = message.sender?.name || "Unknown User"
+//         const cleanMessageText = parseMessageText(message.text || message.content, message.linkTitle, message.imageUrl)
+
+//         // Check if this message has a date separator
+//         const showDateSeparator = message.date !== undefined
 
 //         return (
-//           <div
-//             key={apiMessage.id || index}
-//             className={`chat flex ${
-//               isOwnMessage ? "chat-end justify-end" : "chat-start justify-start"
-//             }`}
-//           >
-//             <div className="flex space-x-3 bg-white rounded-[8px] p-3 shadow-sm w-full group">
-//               {!isOwnMessage && (
-//                 <div className="w-8 h-8 flex-shrink-0">
-//                   <Image
-//                     src={"/images/avatar.png"}
-//                     alt={`${senderName} Avatar`}
-//                     width={32}
-//                     height={32}
-//                     className="rounded-full object-cover"
-//                   />
-//                 </div>
-//               )}
+//           <div key={message.id || index}>
+//             {/* Date separator */}
+//             {showDateSeparator && (
+//               <div className="flex justify-center my-6">
+//                 <span className="text-[#475569] text-sm font-[700]">{message.date}</span>
+//               </div>
+//             )}
+
+//             <div
+//               className="flex space-x-3 bg-white rounded-[8px] p-3 shadow-sm relative group"
+//               onMouseEnter={() => setActiveMessageId(message.id)}
+//               onMouseLeave={() => {
+//                 if (!showReactionMenu && !showActionMenu) {
+//                   setActiveMessageId(null)
+//                 }
+//               }}
+//             >
+//               <div className="w-8 h-8">
+//                 <Image
+//                   src={isOwnMessage ? authUser?.avatar || "/images/avatar.png" : "/images/avatar.png"}
+//                   alt={senderName}
+//                   width={32}
+//                   height={32}
+//                   className="rounded-full"
+//                 />
+//               </div>
 
 //               <div className="flex-1">
 //                 <div className="flex items-center space-x-2 mb-2">
-//                   <span className="font-[700] text-base text-[#1E293B]">
-//                     {senderName}
-//                   </span>
-//                   <span className="text-[#94A3B8] text-sm font-[500]">
-//                     {formatMessageTime(apiMessage.createdAt)}
-//                   </span>
-//                   {isOwnMessage && (
-//                     <span className="text-xs">
-//                       {apiMessage.seen ? (
-//                         <CheckCheck className="h-3 w-3 text-blue-500" />
-//                       ) : (
-//                         <Check className="h-3 w-3" />
-//                       )}
-//                     </span>
+//                   <span className="font-[700] text-base text-[#1E293B]">{senderName}</span>
+//                   {message.sender?.id === 1 && (
+//                     <Badge className="bg-[#EEF2FF] text-[#4F46E5] text-xs px-2 py-1 rounded-[3px] font-[700]">
+//                       Admin
+//                     </Badge>
 //                   )}
+//                   <span className="text-[#94A3B8] text-sm font-[500]">{formatMessageTime(message.createdAt)}</span>
 //                 </div>
 
-//                 <div
-//                   className="bg-[#F8FAFC] text-[#475569] font-[400] text-base mb-3 leading-relaxed rounded-[3px] p-3"
-//                   style={{
-//                     fontSize: `${apiMessage.fontSize}px`,
-//                     fontWeight: apiMessage.bold ? "bold" : "normal",
-//                     fontStyle: apiMessage.italic ? "italic" : "normal",
-//                     textDecoration: apiMessage.underline ? "underline" : "none",
-//                     listStyleType: apiMessage.unorderedList
-//                       ? "disc"
-//                       : apiMessage.orderedList
-//                       ? "decimal"
-//                       : "none",
-//                     paddingLeft:
-//                       apiMessage.unorderedList || apiMessage.orderedList
-//                         ? "20px"
-//                         : "12px",
-//                   }}
-//                 >
-//                   {cleanMessageText}
-//                   {apiMessage.emoji && (
-//                     <span className="ml-0">{apiMessage.emoji}</span>
-//                   )}
-//                 </div>
-
-//                 {apiMessage.codeContent && (
-//                   <div className="bg-gray-900 text-green-400 p-3 rounded-md mb-3 font-mono text-sm overflow-x-auto">
-//                     <div className="text-xs text-gray-400 mb-2">
-//                       {apiMessage.codeLanguage || "code"}
+//                 {/* Quote */}
+//                 {(message.quote || message.replyToMessage) && (
+//                   <div className="border-l-4 border-[#0053F2] bg-[#FCFCFC] p-2 mb-3 rounded-r">
+//                     <div className="flex items-center space-x-2 mb-1">
+//                       <Image
+//                         src="/images/avatar.png"
+//                         alt="Quote author"
+//                         width={20}
+//                         height={20}
+//                         className="rounded-full"
+//                       />
+//                       <div className="flex items-center justify-between w-full">
+//                         <div className="text-[#0053F2] text-sm font-[400]">
+//                           {message.quote?.text || message.replyToMessage?.text || message.replyToMessage?.content || ""}
+//                         </div>
+//                         <div className="text-[#656F7D] text-sm font-[400]">
+//                           — {message.quote?.parts || message.replyToMessage?.sender?.name || "User"}
+//                         </div>
+//                       </div>
 //                     </div>
-//                     <pre>{apiMessage.codeContent}</pre>
 //                   </div>
 //                 )}
 
-//                 <div className="flex flex-wrap gap-2 mb-3">
-//                   {apiMessage.linkTitle && apiMessage.linkTarget && (
-//                     <a
-//                       href={apiMessage.linkTarget}
-//                       target="_blank"
-//                       rel="noopener noreferrer"
-//                       className="inline-block"
-//                     >
+//                 <p
+//                   className="bg-[#F8FAFC] text-[#475569] font-[400] text-base mb-3 leading-relaxed rounded-[3px] p-3"
+//                   style={{
+//                     fontSize: `${message.fontSize}px`,
+//                     fontWeight: message.bold ? "bold" : "normal",
+//                     fontStyle: message.italic ? "italic" : "normal",
+//                     textDecoration: message.underline ? "underline" : "none",
+//                     listStyleType: message.unorderedList ? "disc" : message.orderedList ? "decimal" : "none",
+//                     paddingLeft: message.unorderedList || message.orderedList ? "20px" : "12px",
+//                   }}
+//                 >
+//                   {cleanMessageText}
+//                   {message.emoji && <span className="ml-0">{message.emoji}</span>}
+//                 </p>
+
+//                 {/* Attachments */}
+//                 {(message.linkTitle || message.imageName) && (
+//                   <div className="flex flex-wrap gap-2 mb-3">
+//                     {message.linkTitle && message.linkTarget && (
 //                       <Button
 //                         variant="outline"
 //                         size="sm"
 //                         className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
 //                       >
 //                         <Image
-//                           src={LinkSimple}
+//                           src={LinkSimple || "/placeholder.svg"}
 //                           width={16}
 //                           height={16}
-//                           alt="image-icon"
-//                           className="w-4 h-4 mr-2"
+//                           alt="icon"
+//                           className="mr-2"
 //                         />
-//                         <p className="text-[#475569] font-[700] text-sm">
-//                           {apiMessage.linkTitle}
-//                         </p>
+//                         <p className="text-[#475569] font-[700] text-sm">{message.linkTitle}</p>
 //                       </Button>
-//                     </a>
-//                   )}
+//                     )}
 
-//                   {apiMessage.imageName && (
-//                     <a
-//                       href={apiMessage.imageUrl || "#"}
-//                       target="_blank"
-//                       rel="noopener noreferrer"
-//                       className="inline-block"
-//                     >
+//                     {message.imageName && message.imageUrl && (
+//                       <a href={message.imageUrl} target="_blank" rel="noreferrer">
+//                         <Button
+//                           variant="outline"
+//                           size="sm"
+//                           className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
+//                         >
+//                           <Image
+//                             src={FileImage || "/placeholder.svg"}
+//                             width={16}
+//                             height={16}
+//                             alt="icon"
+//                             className="mr-2"
+//                           />
+//                           <p className="text-[#475569] font-[700] text-sm">{message.imageName}</p>
+//                         </Button>
+//                       </a>
+//                     )}
+
+//                     {message.codeLanguage && message.codeContent && (
 //                       <Button
 //                         variant="outline"
 //                         size="sm"
 //                         className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
+//                         onClick={() => setCodeBlockDialogOpen(true)}
 //                       >
 //                         <Image
-//                           src={FolderOpen}
+//                           src={DeviceMobileCamera || "/placeholder.svg"}
 //                           width={16}
 //                           height={16}
-//                           alt="image-icon"
-//                           className="w-4 h-4 mr-2"
+//                           alt="icon"
+//                           className="mr-2"
 //                         />
-//                         <p className="text-[#475569] font-[700] text-sm">
-//                           {apiMessage.imageName}
-//                         </p>
+//                         <p className="text-[#475569] font-[700] text-sm">{message.codeLanguage} Code</p>
 //                       </Button>
-//                     </a>
-//                   )}
-//                 </div>
+//                     )}
 
-//                 {/* {apiMessage.reactions && apiMessage.reactions.length > 0 && (
-//                   <div className="flex items-center space-x-2 flex-wrap mb-2">
-//                     {apiMessage.reactions.map((reaction, i) => (
+//                     {/* Code Block Dialog */}
+//                     <Dialog open={codeBlockDialogOpen} onOpenChange={setCodeBlockDialogOpen}>
+//                       <DialogTrigger asChild>
+//                         <Button variant="ghost" size="sm" className="text-[#6c7275] hover:bg-[#f8fafc] cursor-pointer">
+//                           <Image src={TablerCode || "/placeholder.svg"} width={20} height={20} alt="icon" />
+//                         </Button>
+//                       </DialogTrigger>
+//                       <DialogContent className="sm:max-w-[500px]">
+//                         <DialogHeader>
+//                           <DialogTitle>Code Block</DialogTitle>
+//                         </DialogHeader>
+//                         <div className="grid gap-4 py-4">
+//                           <div className="grid gap-2">
+//                             <Label htmlFor="code-language">Language</Label>
+//                             <p>{message.codeLanguage}</p>
+//                           </div>
+//                           <div className="grid gap-2">
+//                             <Label htmlFor="code-content">Code</Label>
+//                             <p
+//                               id="code-content"
+//                               className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+//                             >
+//                               {message.codeContent}
+//                             </p>
+//                           </div>
+//                         </div>
+//                         <div className="flex justify-end gap-2">
+//                           <Button variant="outline" onClick={() => setCodeBlockDialogOpen(false)}>
+//                             Ok
+//                           </Button>
+//                         </div>
+//                       </DialogContent>
+//                     </Dialog>
+//                   </div>
+//                 )}
+
+//                 {/* Reactions */}
+//                 {message.reactions && message.reactions.length > 0 && (
+//                   <div className="flex items-center space-x-4">
+//                     {message.reactions.map((reaction: any, idx: number) => (
 //                       <div
-//                         key={i}
-//                         className="flex items-center space-x-1 bg-[#F1F5F9] py-1 px-2 rounded-[3px] cursor-pointer hover:bg-[#E2E8F0]"
-//                         onClick={() =>
-//                           handleAddReaction(
-//                             String(apiMessage.id),
-//                             reaction.emoji?.native || "👍"
-//                           )
-//                         }
+//                         key={idx}
+//                         className={`flex items-center space-x-1.5 ${
+//                           !message.quote
+//                             ? "bg-[#F1F5F9] py-1 px-2 rounded-[3px]"
+//                             : "bg-[#F7F7F7] border border-[#EEEDF0] py-1 px-2 rounded-[19px]"
+//                         } cursor-pointer`}
 //                       >
-//                         <span>{reaction.emoji?.native || "👍"}</span>
-//                         <span className="text-sm font-[700] text-[#475569]">
-//                           {reaction.count || 1}
+//                         <span
+//                           className={`${
+//                             !message.quote ? "text-base font-[700] text-[#475569]" : "text-xs font-[400] text-[#646464]"
+//                           }`}
+//                         >
+//                           {reaction.count}
+//                         </span>
+//                         <span>
+//                           {reaction.emoji?.name === "heart" && (
+//                             <Image
+//                               src={Emoji1 || "/placeholder.svg"}
+//                               width={16}
+//                               height={16}
+//                               alt="icon"
+//                               className="mr-2"
+//                             />
+//                           )}
+//                           {reaction.emoji?.name === "thumbsUp" && (
+//                             <Image
+//                               src={Emoji2 || "/placeholder.svg"}
+//                               width={16}
+//                               height={16}
+//                               alt="icon"
+//                               className="mr-2"
+//                             />
+//                           )}
+//                           {reaction.emoji?.name === "smile" && (
+//                             <Image
+//                               src={Emoji3 || "/placeholder.svg"}
+//                               width={16}
+//                               height={16}
+//                               alt="icon"
+//                               className="mr-2"
+//                             />
+//                           )}
 //                         </span>
 //                       </div>
 //                     ))}
 //                   </div>
-//                 )} */}
-
-//                 {/* <div className="flex items-center space-x-2">
-//                   <Button
-//                     variant="ghost"
-//                     size="sm"
-//                     className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-//                     onClick={() =>
-//                       handleAddReaction(String(apiMessage.id), "👍")
-//                     }
-//                   >
-//                     <Smile className="h-3 w-3" />
-//                   </Button>
-//                 </div> */}
+//                 )}
 //               </div>
 
-//               {isOwnMessage && (
-//                 <div className="w-8 h-8 flex-shrink-0">
-//                   <Image
-//                     src={authUser?.avatar}
-//                     alt="Your Avatar"
-//                     width={32}
-//                     height={32}
-//                     className="rounded-full object-cover"
-//                   />
+//               {/* Emoji reaction and action menu (visible on hover) */}
+//               {activeMessageId === message.id && (
+//                 <div className="absolute right-3 top-[-30px] flex items-center space-x-2 bg-[#1E1E1E] rounded-full px-2 py-1 shadow-lg z-10">
+//                   <div className="flex space-x-1">
+//                     {emojiReactions.map((item) => (
+//                       <button
+//                         key={item.name}
+//                         className="hover:bg-gray-700 p-1 rounded-full transition-colors"
+//                         onClick={(e) => {
+//                           e.stopPropagation()
+//                           handleAddReaction(message.id.toString(), item)
+//                         }}
+//                       >
+//                         <span className="text-lg">{item.emoji}</span>
+//                       </button>
+//                     ))}
+//                   </div>
+//                   <button
+//                     className="text-white hover:bg-gray-700 p-1 rounded-full transition-colors"
+//                     onClick={(e) => toggleActionMenu(e, message.id)}
+//                   >
+//                     <span className="text-xl cursor-pointer">⋯</span>
+//                   </button>
+//                 </div>
+//               )}
+
+//               {/* Action menu (visible when clicked) */}
+//               {showActionMenu && activeMessageId === message.id && (
+//                 <div className="absolute right-3 top-10 bg-white rounded-md shadow-lg z-20 w-48 py-1 border border-gray-200">
+//                   <button
+//                     className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm"
+//                     onClick={() => handleReply(message)}
+//                   >
+//                     <Reply className="w-4 h-4" />
+//                     <span>Reply</span>
+//                   </button>
+//                   <button className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm">
+//                     <Trash2 className="w-4 h-4" />
+//                     <span>Delete</span>
+//                   </button>
 //                 </div>
 //               )}
 //             </div>
 //           </div>
-//         );
+//         )
 //       })}
 //       <div ref={messageEndRef} />
 //     </div>
-//   );
+//   )
 // }
 
-// export default Messages;
+// export default Messages
 
 // "use client";
 
-// import { useEffect, useRef } from "react";
+// import type React from "react";
+// import { useEffect, useRef, useState } from "react";
 // import Image from "next/image";
 // import { Button } from "@/components/ui/button";
+// import { Badge } from "@/components/ui/badge";
 // import { useChatStore } from "@/store/useChatStore";
 // import { useAuthStore } from "@/store/useAuthStore";
-// import { Check, CheckCheck, RefreshCw, AlertTriangle } from "lucide-react";
+// import { Reply, Trash2 } from "lucide-react";
+// import {
+//   DeviceMobileCamera,
+//   Emoji1,
+//   Emoji2,
+//   Emoji3,
+//   FileImage,
+//   LinkSimple,
+//   TablerCode,
+// } from "@/public/icons";
+// import formatMessageTime from "@/lib/format-message-time";
+// import {
+//   Dialog,
+//   DialogContent,
+//   DialogHeader,
+//   DialogTitle,
+//   DialogTrigger,
+// } from "../ui/dialog";
+// import { Label } from "../ui/label";
 
-// // Format time
-// function formatMessageTime(dateString: string): string {
-//   const date = new Date(dateString);
-//   const now = new Date();
-//   const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-//   return diffInHours < 24
-//     ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-//     : date.toLocaleDateString();
+// interface EmojiReaction {
+//   id: string;
+//   emoji: string;
+//   name: string;
 // }
 
-// // API message type
-// interface ApiMessage {
-//   id: number;
-//   text: string;
-//   bold: boolean;
-//   italic: boolean;
-//   underline: boolean;
-//   unorderedList: boolean;
-//   orderedList: boolean;
-//   fontSize: string;
-//   linkTitle: string | null;
-//   linkTarget: string | null;
-//   emoji: string | null;
-//   imageName: string | null;
-//   imageUrl: string | null;
-//   codeLanguage: string | null;
-//   codeContent: string | null;
-//   seen: number;
-//   senderId: number;
-//   receiverId: number;
-//   createdAt: string;
-//   updatedAt: string;
-//   sender: {
-//     id: number;
-//     name: string;
-//     email: string;
-//   };
-//   receiver: {
-//     id: number;
-//     name: string;
-//     email: string;
-//   };
-//   reactions?: {
-//     emoji: {
-//       native: string;
-//     };
-//     count: number;
-//   }[];
+// const emojiReactions: EmojiReaction[] = [
+//   { id: "1", emoji: "👍", name: "thumbsUp" },
+//   { id: "2", emoji: "❤️", name: "heart" },
+//   { id: "3", emoji: "😊", name: "smile" },
+// ];
+
+// function groupMessagesByDate(messages: any[]) {
+//   if (!messages || messages.length === 0) return [];
+
+//   const grouped: any[] = [];
+//   let currentDate: string | null = null;
+
+//   messages.forEach((message) => {
+//     const messageDateObj = new Date(message.createdAt);
+//     const today = new Date();
+//     const isToday =
+//       messageDateObj.getDate() === today.getDate() &&
+//       messageDateObj.getMonth() === today.getMonth() &&
+//       messageDateObj.getFullYear() === today.getFullYear();
+
+//     const displayDate = isToday
+//       ? "Today"
+//       : messageDateObj.toLocaleDateString("en-US", {
+//           weekday: "long",
+//           month: "short",
+//           day: "numeric",
+//         });
+
+//     if (displayDate !== currentDate) {
+//       grouped.push({ date: displayDate });
+//       currentDate = displayDate;
+//     }
+//     grouped.push(message);
+//   });
+
+//   return grouped;
 // }
 
 // function Messages() {
@@ -423,15 +555,21 @@
 //     unsubscribeFromMessages,
 //     addReaction,
 //     isMessagesLoading,
-//     isTyping,
 //     socketConnected,
 //     socketConnecting,
 //     socketError,
 //     retrySocketConnection,
+//     setReplyToMessage,
 //   } = useChatStore();
 
 //   const { authUser, checkAuth } = useAuthStore();
 //   const messageEndRef = useRef<HTMLDivElement>(null);
+//   const [activeMessageId, setActiveMessageId] = useState<number | null>(null);
+//   const [showReactionMenu, setShowReactionMenu] = useState(false);
+//   const [showActionMenu, setShowActionMenu] = useState(false);
+//   const [codeBlockDialogOpen, setCodeBlockDialogOpen] = useState(false);
+
+//   const groupedMessages = groupMessagesByDate(messages);
 
 //   // Initialize socket when authUser is available
 //   useEffect(() => {
@@ -445,6 +583,7 @@
 //     socketConnecting,
 //     socketError,
 //     initializeSocket,
+//     checkAuth,
 //   ]);
 
 //   // Fetch messages and subscribe when user is selected AND socket is ready
@@ -471,11 +610,11 @@
 //   ]);
 
 //   // Subscribe to socket events when socket becomes connected
-//   useEffect(() => {
-//     if (socketConnected && selectedUser?.id) {
-//       subscribeToMessages();
-//     }
-//   }, [socketConnected, selectedUser?.id, subscribeToMessages]);
+//   // useEffect(() => {
+//   //   if (socketConnected && selectedUser?.id) {
+//   //     subscribeToMessages();
+//   //   }
+//   // }, [socketConnected, selectedUser?.id, subscribeToMessages]);
 
 //   // Scroll to latest message
 //   useEffect(() => {
@@ -484,17 +623,48 @@
 //     }
 //   }, [messages]);
 
-//   const handleAddReaction = async (messageId: string, emoji: string) => {
-//     await addReaction(messageId, {
-//       id: emoji,
-//       native: emoji,
-//       name: emoji,
-//     });
+//   // Close menus when clicking outside
+//   useEffect(() => {
+//     const handleClickOutside = () => {
+//       setShowReactionMenu(false);
+//       setShowActionMenu(false);
+//       setActiveMessageId(null);
+//     };
+
+//     document.addEventListener("click", handleClickOutside);
+//     return () => {
+//       document.removeEventListener("click", handleClickOutside);
+//     };
+//   }, []);
+
+//   const handleAddReaction = async (messageId: string, emoji: EmojiReaction) => {
+//     try {
+//       await addReaction(messageId, {
+//         id: emoji.id,
+//         native: emoji.emoji,
+//         name: emoji.name,
+//       });
+//       setShowReactionMenu(false);
+//       setActiveMessageId(null);
+//     } catch (error) {
+//       console.error("Failed to add reaction:", error);
+//     }
 //   };
 
 //   const handleRetryConnection = () => {
 //     if (authUser?.id) {
 //       retrySocketConnection(authUser.id);
+//     }
+//   };
+
+//   const handleReply = (message: any) => {
+//     setReplyToMessage(message);
+//     setShowActionMenu(false);
+//     setActiveMessageId(null);
+//     // Focus the message input
+//     const messageInput = document.querySelector(".DraftEditor-root");
+//     if (messageInput) {
+//       (messageInput as HTMLElement).focus();
 //     }
 //   };
 
@@ -504,23 +674,99 @@
 //     imageUrl: string | null
 //   ) => {
 //     let cleanText = text;
-//     if (linkTitle && text.includes(linkTitle)) {
+//     if (linkTitle && text && text.includes(linkTitle)) {
 //       cleanText = cleanText.replace(linkTitle, "").trim();
 //     }
-//     if (imageUrl && text.includes("[Image:")) {
+//     if (imageUrl && text && text.includes("[Image:")) {
 //       cleanText = cleanText.replace(/\[Image:.*?\]/g, "").trim();
 //     }
 //     return cleanText;
 //   };
 
+//   const toggleReactionMenu = (e: React.MouseEvent, messageId: number) => {
+//     e.stopPropagation();
+//     setActiveMessageId(messageId);
+//     setShowReactionMenu(true);
+//     setShowActionMenu(false);
+//   };
+
+//   const toggleActionMenu = (e: React.MouseEvent, messageId: number) => {
+//     e.stopPropagation();
+//     setActiveMessageId(messageId);
+//     setShowActionMenu(true);
+//     setShowReactionMenu(false);
+//   };
+
 //   if (!selectedUser) {
 //     return (
-//       <div className="flex-1 flex items-center justify-center">
-//         <div className="text-center">
-//           <h3 className="text-lg font-medium">Select a conversation</h3>
-//           <p className="text-muted-foreground">
-//             Choose a contact to start messaging
-//           </p>
+//       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+//         <div className="relative w-48 h-48 mb-6">
+//           <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full opacity-60"></div>
+//           <div className="absolute inset-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full opacity-80"></div>
+//           <div className="absolute inset-8 flex items-center justify-center">
+//             <svg
+//               xmlns="http://www.w3.org/2000/svg"
+//               width="64"
+//               height="64"
+//               viewBox="0 0 24 24"
+//               fill="none"
+//               stroke="currentColor"
+//               strokeWidth="1.5"
+//               strokeLinecap="round"
+//               strokeLinejoin="round"
+//               className="text-blue-400"
+//             >
+//               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+//             </svg>
+//           </div>
+//         </div>
+
+//         <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+//           No conversation selected
+//         </h3>
+//         <p className="text-gray-500 max-w-md mb-6">
+//           Choose a contact from your list to start messaging or create a new
+//           conversation
+//         </p>
+
+//         <div className="flex gap-3">
+//           <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center">
+//             <svg
+//               xmlns="http://www.w3.org/2000/svg"
+//               width="18"
+//               height="18"
+//               viewBox="0 0 24 24"
+//               fill="none"
+//               stroke="currentColor"
+//               strokeWidth="2"
+//               strokeLinecap="round"
+//               strokeLinejoin="round"
+//               className="mr-2"
+//             >
+//               <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+//               <circle cx="8.5" cy="7" r="4"></circle>
+//               <line x1="20" y1="8" x2="20" y2="14"></line>
+//               <line x1="23" y1="11" x2="17" y2="11"></line>
+//             </svg>
+//             New Contact
+//           </button>
+//           <button className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors flex items-center">
+//             <svg
+//               xmlns="http://www.w3.org/2000/svg"
+//               width="18"
+//               height="18"
+//               viewBox="0 0 24 24"
+//               fill="none"
+//               stroke="currentColor"
+//               strokeWidth="2"
+//               strokeLinecap="round"
+//               strokeLinejoin="round"
+//               className="mr-2"
+//             >
+//               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+//             </svg>
+//             New Group
+//           </button>
 //         </div>
 //       </div>
 //     );
@@ -528,218 +774,420 @@
 
 //   if (isMessagesLoading) {
 //     return (
-//       <div className="flex-1 flex items-center justify-center">
-//         <div className="text-center">
-//           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-//           <p className="text-muted-foreground">Loading messages...</p>
+//       <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-4 space-y-6">
+//         {/* Date separator skeleton */}
+//         <div className="flex justify-center my-6">
+//           <div className="h-4 w-24 bg-gray-200 rounded-full animate-pulse"></div>
 //         </div>
+
+//         {/* Message skeletons */}
+//         {Array.from({ length: 10 }).map((_, index) => (
+//           <div
+//             key={index}
+//             className="flex space-x-3 bg-white rounded-[8px] p-3 shadow-sm relative group animate-pulse"
+//           >
+//             {/* Avatar skeleton */}
+//             <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+
+//             <div className="flex-1 space-y-3">
+//               {/* Header skeleton */}
+//               <div className="flex items-center space-x-2">
+//                 <div className="h-4 w-24 bg-gray-200 rounded"></div>
+//                 <div className="h-3 w-16 bg-gray-200 rounded"></div>
+//               </div>
+
+//               {/* Message content skeleton */}
+//               <div className="space-y-2">
+//                 <div className="h-4 w-full bg-gray-200 rounded"></div>
+//                 <div className="h-4 w-5/6 bg-gray-200 rounded"></div>
+//                 <div className="h-4 w-4/6 bg-gray-200 rounded"></div>
+//               </div>
+
+//               {/* Attachment skeleton (randomly shown) */}
+//               {index % 3 === 0 && (
+//                 <div className="flex gap-2">
+//                   <div className="h-8 w-24 bg-gray-200 rounded"></div>
+//                   <div className="h-8 w-24 bg-gray-200 rounded"></div>
+//                 </div>
+//               )}
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//     );
+//   }
+
+//   if (messages.length === 0) {
+//     return (
+//       <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white rounded-lg">
+//         <div className="relative w-25 h-25 mb-6">
+//           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full opacity-80"></div>
+//           <div className="absolute inset-6 flex items-center justify-center">
+//             <svg
+//               xmlns="http://www.w3.org/2000/svg"
+//               width="60"
+//               height="60"
+//               viewBox="0 0 24 24"
+//               fill="none"
+//               stroke="currentColor"
+//               strokeWidth="1.5"
+//               strokeLinecap="round"
+//               strokeLinejoin="round"
+//               className="text-blue-400"
+//             >
+//               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+//               <line x1="8" y1="10" x2="8" y2="10.01"></line>
+//               <line x1="12" y1="10" x2="12" y2="10.01"></line>
+//               <line x1="16" y1="10" x2="16" y2="10.01"></line>
+//             </svg>
+//           </div>
+//         </div>
+
+//         <h3 className="text-xl text-gray-800 mb-2 font-[600]">
+//           No messages yet
+//         </h3>
+//         <p className="text-gray-500 font-[400]">
+//           Start the conversation by sending your first message to{" "}
+//           {selectedUser?.name || "this user"}
+//         </p>
 //       </div>
 //     );
 //   }
 
 //   return (
 //     <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-4 space-y-6">
-//       {/* Socket connection status */}
-//       {socketError && (
-//         <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-//           <div className="flex items-center justify-between">
-//             <div className="flex items-center space-x-2">
-//               <AlertTriangle className="w-4 h-4 text-red-500" />
-//               <span className="text-sm text-red-700">
-//                 Real-time chat unavailable:{" "}
-//                 {socketError.includes("timeout")
-//                   ? "Server not responding"
-//                   : socketError}
+//       {groupedMessages.map((item: any, index: number) => {
+//         if (item.date) {
+//           return (
+//             <div key={`date-${index}`} className="flex justify-center my-6">
+//               <span className="text-[#475569] text-sm font-[700]">
+//                 {item.date}
 //               </span>
 //             </div>
-//             <Button
-//               variant="outline"
-//               size="sm"
-//               onClick={handleRetryConnection}
-//               disabled={socketConnecting}
-//             >
-//               <RefreshCw
-//                 className={`w-3 h-3 mr-1 ${
-//                   socketConnecting ? "animate-spin" : ""
-//                 }`}
-//               />
-//               Retry
-//             </Button>
-//           </div>
-//         </div>
-//       )}
+//           );
+//         }
 
-//       {socketConnecting && !socketError && (
-//         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-//           <div className="flex items-center space-x-2">
-//             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-//             <span className="text-sm text-blue-700">
-//               Connecting to real-time chat...
-//             </span>
-//           </div>
-//         </div>
-//       )}
-
-//       {socketConnected && (
-//         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-//           <div className="flex items-center space-x-2">
-//             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-//             <span className="text-sm text-green-700">
-//               Real-time chat connected
-//             </span>
-//           </div>
-//         </div>
-//       )}
-
-//       {isTyping && (
-//         <div className="flex justify-start">
-//           <div className="bg-gray-100 rounded-lg px-4 py-2">
-//             <div className="flex space-x-1">
-//               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-//               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-//               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-
-//       {messages.map((message: any, index: number) => {
-//         const apiMessage = message as ApiMessage;
+//         const message = item;
 //         const isOwnMessage =
-//           apiMessage.senderId === authUser?.id ||
-//           apiMessage.senderId === Number(authUser?.id);
+//           message.senderId === authUser?.id ||
+//           message.senderId === Number(authUser?.id) ||
+//           message.sender?.id === authUser?.id ||
+//           message.sender?.id === Number(authUser?.id);
 
-//         const senderName = apiMessage.sender?.name || "Unknown User";
+//         const senderName = message.sender?.name || "Unknown User";
 //         const cleanMessageText = parseMessageText(
-//           apiMessage.text,
-//           apiMessage.linkTitle,
-//           apiMessage.imageUrl
+//           message.text || message.content,
+//           message.linkTitle,
+//           message.imageUrl
 //         );
 
 //         return (
-//           <div
-//             key={apiMessage.id || index}
-//             className={`chat flex ${
-//               isOwnMessage ? "chat-end justify-end" : "chat-start justify-start"
-//             }`}
-//           >
-//             <div className="flex space-x-3 bg-white rounded-[8px] p-3 shadow-sm w-full group">
-//               {!isOwnMessage && (
-//                 <div className="w-8 h-8 flex-shrink-0">
-//                   <Image
-//                     src={"/images/avatar.png"}
-//                     alt={`${senderName} Avatar`}
-//                     width={32}
-//                     height={32}
-//                     className="rounded-full object-cover"
-//                   />
-//                 </div>
-//               )}
+//           <div key={message.id || index}>
+//             <div
+//               className="flex space-x-3 bg-white rounded-[8px] p-3 shadow-sm relative group"
+//               onMouseEnter={() => setActiveMessageId(message.id)}
+//               onMouseLeave={() => {
+//                 if (!showReactionMenu && !showActionMenu) {
+//                   setActiveMessageId(null);
+//                 }
+//               }}
+//             >
+//               <div className="w-8 h-8">
+//                 <Image
+//                   src={
+//                     isOwnMessage
+//                       ? authUser?.avatar || "/images/avatar.png"
+//                       : "/images/avatar.png"
+//                   }
+//                   alt={senderName}
+//                   width={32}
+//                   height={32}
+//                   className="rounded-full"
+//                 />
+//               </div>
 
 //               <div className="flex-1">
 //                 <div className="flex items-center space-x-2 mb-2">
 //                   <span className="font-[700] text-base text-[#1E293B]">
 //                     {senderName}
 //                   </span>
-//                   <span className="text-[#94A3B8] text-sm font-[500]">
-//                     {formatMessageTime(apiMessage.createdAt)}
-//                   </span>
-//                   {isOwnMessage && (
-//                     <span className="text-xs">
-//                       {apiMessage.seen ? (
-//                         <CheckCheck className="h-3 w-3 text-blue-500" />
-//                       ) : (
-//                         <Check className="h-3 w-3" />
-//                       )}
-//                     </span>
+//                   {message.sender?.id === 1 && (
+//                     <Badge className="bg-[#EEF2FF] text-[#4F46E5] text-xs px-2 py-1 rounded-[3px] font-[700]">
+//                       Admin
+//                     </Badge>
 //                   )}
+//                   <span className="text-[#94A3B8] text-sm font-[500]">
+//                     {formatMessageTime(message.createdAt)}
+//                   </span>
 //                 </div>
 
-//                 <div
+//                 {/* Quote */}
+//                 {(message.quote || message.replyToMessage) && (
+//                   <div className="border-l-4 border-[#0053F2] bg-[#FCFCFC] p-2 mb-3 rounded-r">
+//                     <div className="flex items-center space-x-2 mb-1">
+//                       <Image
+//                         src="/images/avatar.png"
+//                         alt="Quote author"
+//                         width={20}
+//                         height={20}
+//                         className="rounded-full"
+//                       />
+//                       <div className="flex items-center justify-between w-full">
+//                         <div className="text-[#0053F2] text-sm font-[400]">
+//                           {message.quote?.text ||
+//                             message.replyToMessage?.text ||
+//                             message.replyToMessage?.content ||
+//                             ""}
+//                         </div>
+//                         <div className="text-[#656F7D] text-sm font-[400]">
+//                           —{" "}
+//                           {message.quote?.parts ||
+//                             message.replyToMessage?.sender?.name ||
+//                             "User"}
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 )}
+
+//                 <p
 //                   className="bg-[#F8FAFC] text-[#475569] font-[400] text-base mb-3 leading-relaxed rounded-[3px] p-3"
 //                   style={{
-//                     fontSize: `${apiMessage.fontSize}px`,
-//                     fontWeight: apiMessage.bold ? "bold" : "normal",
-//                     fontStyle: apiMessage.italic ? "italic" : "normal",
-//                     textDecoration: apiMessage.underline ? "underline" : "none",
-//                     listStyleType: apiMessage.unorderedList
+//                     fontSize: `${message.fontSize}px`,
+//                     fontWeight: message.bold ? "bold" : "normal",
+//                     fontStyle: message.italic ? "italic" : "normal",
+//                     textDecoration: message.underline ? "underline" : "none",
+//                     listStyleType: message.unorderedList
 //                       ? "disc"
-//                       : apiMessage.orderedList
+//                       : message.orderedList
 //                       ? "decimal"
 //                       : "none",
 //                     paddingLeft:
-//                       apiMessage.unorderedList || apiMessage.orderedList
+//                       message.unorderedList || message.orderedList
 //                         ? "20px"
 //                         : "12px",
 //                   }}
 //                 >
 //                   {cleanMessageText}
-//                   {apiMessage.emoji && (
-//                     <span className="ml-0">{apiMessage.emoji}</span>
+//                   {message.emoji && (
+//                     <span className="ml-0">{message.emoji}</span>
 //                   )}
-//                 </div>
+//                 </p>
 
-//                 {apiMessage.codeContent && (
-//                   <div className="bg-gray-900 text-green-400 p-3 rounded-md mb-3 font-mono text-sm overflow-x-auto">
-//                     <div className="text-xs text-gray-400 mb-2">
-//                       {apiMessage.codeLanguage || "code"}
-//                     </div>
-//                     <pre>{apiMessage.codeContent}</pre>
+//                 {/* Attachments */}
+//                 {(message.linkTitle || message.imageName) && (
+//                   <div className="flex flex-wrap gap-2 mb-3">
+//                     {message.linkTitle && message.linkTarget && (
+//                       <Button
+//                         variant="outline"
+//                         size="sm"
+//                         className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
+//                       >
+//                         <Image
+//                           src={LinkSimple || "/placeholder.svg"}
+//                           width={16}
+//                           height={16}
+//                           alt="icon"
+//                           className="mr-2"
+//                         />
+//                         <p className="text-[#475569] font-[700] text-sm">
+//                           {message.linkTitle}
+//                         </p>
+//                       </Button>
+//                     )}
+
+//                     {message.imageName && message.imageUrl && (
+//                       <a
+//                         href={message.imageUrl}
+//                         target="_blank"
+//                         rel="noreferrer"
+//                       >
+//                         <Button
+//                           variant="outline"
+//                           size="sm"
+//                           className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
+//                         >
+//                           <Image
+//                             src={FileImage || "/placeholder.svg"}
+//                             width={16}
+//                             height={16}
+//                             alt="icon"
+//                             className="mr-2"
+//                           />
+//                           <p className="text-[#475569] font-[700] text-sm">
+//                             {message.imageName}
+//                           </p>
+//                         </Button>
+//                       </a>
+//                     )}
+
+//                     {message.codeLanguage && message.codeContent && (
+//                       <Button
+//                         variant="outline"
+//                         size="sm"
+//                         className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
+//                         onClick={() => setCodeBlockDialogOpen(true)}
+//                       >
+//                         <Image
+//                           src={DeviceMobileCamera || "/placeholder.svg"}
+//                           width={16}
+//                           height={16}
+//                           alt="icon"
+//                           className="mr-2"
+//                         />
+//                         <p className="text-[#475569] font-[700] text-sm">
+//                           {message.codeLanguage} Code
+//                         </p>
+//                       </Button>
+//                     )}
+
+//                     {/* Code Block Dialog */}
+//                     <Dialog
+//                       open={codeBlockDialogOpen}
+//                       onOpenChange={setCodeBlockDialogOpen}
+//                     >
+//                       <DialogTrigger asChild>
+//                         <Button
+//                           variant="ghost"
+//                           size="sm"
+//                           className="text-[#6c7275] hover:bg-[#f8fafc] cursor-pointer"
+//                         >
+//                           <Image
+//                             src={TablerCode || "/placeholder.svg"}
+//                             width={20}
+//                             height={20}
+//                             alt="icon"
+//                           />
+//                         </Button>
+//                       </DialogTrigger>
+//                       <DialogContent className="sm:max-w-[500px]">
+//                         <DialogHeader>
+//                           <DialogTitle>Code Block</DialogTitle>
+//                         </DialogHeader>
+//                         <div className="grid gap-4 py-4">
+//                           <div className="grid gap-2">
+//                             <Label htmlFor="code-language">Language</Label>
+//                             <p>{message.codeLanguage}</p>
+//                           </div>
+//                           <div className="grid gap-2">
+//                             <Label htmlFor="code-content">Code</Label>
+//                             <p
+//                               id="code-content"
+//                               className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+//                             >
+//                               {message.codeContent}
+//                             </p>
+//                           </div>
+//                         </div>
+//                         <div className="flex justify-end gap-2">
+//                           <Button
+//                             variant="outline"
+//                             onClick={() => setCodeBlockDialogOpen(false)}
+//                           >
+//                             Ok
+//                           </Button>
+//                         </div>
+//                       </DialogContent>
+//                     </Dialog>
 //                   </div>
 //                 )}
 
-//                 <div className="flex flex-wrap gap-2 mb-3">
-//                   {apiMessage.linkTitle && apiMessage.linkTarget && (
-//                     <a
-//                       href={apiMessage.linkTarget}
-//                       target="_blank"
-//                       rel="noopener noreferrer"
-//                       className="inline-block"
-//                     >
-//                       <Button
-//                         variant="outline"
-//                         size="sm"
-//                         className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
+//                 {/* Reactions */}
+//                 {message.reactions && message.reactions.length > 0 && (
+//                   <div className="flex items-center space-x-4">
+//                     {message.reactions.map((reaction: any, idx: number) => (
+//                       <div
+//                         key={idx}
+//                         className={`flex items-center space-x-1.5 ${
+//                           !message.quote
+//                             ? "bg-[#F1F5F9] py-1 px-2 rounded-[3px]"
+//                             : "bg-[#F7F7F7] border border-[#EEEDF0] py-1 px-2 rounded-[19px]"
+//                         } cursor-pointer`}
 //                       >
-//                         <span className="w-4 h-4 mr-2">🔗</span>
-//                         <p className="text-[#475569] font-[700] text-sm">
-//                           {apiMessage.linkTitle}
-//                         </p>
-//                       </Button>
-//                     </a>
-//                   )}
-
-//                   {apiMessage.imageName && (
-//                     <a
-//                       href={apiMessage.imageUrl || "#"}
-//                       target="_blank"
-//                       rel="noopener noreferrer"
-//                       className="inline-block"
-//                     >
-//                       <Button
-//                         variant="outline"
-//                         size="sm"
-//                         className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
-//                       >
-//                         <span className="w-4 h-4 mr-2">📁</span>
-//                         <p className="text-[#475569] font-[700] text-sm">
-//                           {apiMessage.imageName}
-//                         </p>
-//                       </Button>
-//                     </a>
-//                   )}
-//                 </div>
+//                         <span
+//                           className={`${
+//                             !message.quote
+//                               ? "text-base font-[700] text-[#475569]"
+//                               : "text-xs font-[400] text-[#646464]"
+//                           }`}
+//                         >
+//                           {reaction.count}
+//                         </span>
+//                         <span>
+//                           {reaction.emoji?.name === "heart" && (
+//                             <Image
+//                               src={Emoji1 || "/placeholder.svg"}
+//                               width={16}
+//                               height={16}
+//                               alt="icon"
+//                               className="mr-2"
+//                             />
+//                           )}
+//                           {reaction.emoji?.name === "thumbsUp" && (
+//                             <Image
+//                               src={Emoji2 || "/placeholder.svg"}
+//                               width={16}
+//                               height={16}
+//                               alt="icon"
+//                               className="mr-2"
+//                             />
+//                           )}
+//                           {reaction.emoji?.name === "smile" && (
+//                             <Image
+//                               src={Emoji3 || "/placeholder.svg"}
+//                               width={16}
+//                               height={16}
+//                               alt="icon"
+//                               className="mr-2"
+//                             />
+//                           )}
+//                         </span>
+//                       </div>
+//                     ))}
+//                   </div>
+//                 )}
 //               </div>
 
-//               {isOwnMessage && (
-//                 <div className="w-8 h-8 flex-shrink-0">
-//                   <Image
-//                     src={authUser?.avatar || "/images/avatar.png"}
-//                     alt="Your Avatar"
-//                     width={32}
-//                     height={32}
-//                     className="rounded-full object-cover"
-//                   />
+//               {/* Emoji reaction and action menu (visible on hover) */}
+//               {activeMessageId === message.id && (
+//                 <div className="absolute right-3 top-[-30px] flex items-center space-x-2 bg-[#F8FAFC] rounded-full px-2 py-1 shadow-lg z-10">
+//                   <div className="flex space-x-1">
+//                     {emojiReactions.map((item) => (
+//                       <button
+//                         key={item.name}
+//                         className="hover:bg-slate-300 p-[1px] rounded-full transition-colors cursor-pointer"
+//                         onClick={(e) => {
+//                           e.stopPropagation();
+//                           handleAddReaction(message.id.toString(), item);
+//                         }}
+//                       >
+//                         <span className="text-lg">{item.emoji}</span>
+//                       </button>
+//                     ))}
+//                   </div>
+//                   <button
+//                     className="text-[#475569] cursor-pointer transition-colors"
+//                     onClick={(e) => toggleActionMenu(e, message.id)}
+//                   >
+//                     <span className="text-xl cursor-pointer">⋯</span>
+//                   </button>
+//                 </div>
+//               )}
+
+//               {/* Action menu (visible when clicked) */}
+//               {!showActionMenu && activeMessageId === message.id && (
+//                 <div className="absolute right-3 top-6 bg-white rounded-md shadow-lg z-20 w-48 py-1 border border-gray-200">
+//                   <button
+//                     className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm cursor-pointer"
+//                     onClick={() => handleReply(message)}
+//                   >
+//                     <Reply className="w-4 h-4" />
+//                     <span>Reply</span>
+//                   </button>
+//                   <button className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm cursor-pointer">
+//                     <Trash2 className="w-4 h-4" />
+//                     <span>Delete</span>
+//                   </button>
 //                 </div>
 //               )}
 //             </div>
@@ -753,27 +1201,64 @@
 
 // export default Messages;
 
-"use client";
+"use client"
 
-import type React from "react";
+import type React from "react"
+import { useEffect, useRef, useState } from "react"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { useChatStore } from "@/store/useChatStore"
+import { useAuthStore } from "@/store/useAuthStore"
+import { Reply, Trash2 } from "lucide-react"
+import { DeviceMobileCamera, Emoji1, Emoji2, Emoji3, FileImage, LinkSimple, TablerCode } from "@/public/icons"
+import formatMessageTime from "@/lib/format-message-time"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
+import { Label } from "../ui/label"
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useChatStore } from "@/store/useChatStore";
-import { useAuthStore } from "@/store/useAuthStore";
-import { Check, CheckCheck, Reply, Forward, Link2, Trash2 } from "lucide-react";
-import { LinkSimple } from "@/public/icons";
-import formatMessageTime from "@/lib/format-message-time";
+interface EmojiReaction {
+  id: string
+  emoji: string
+  name: string
+}
 
-// Emoji data
-const emojiReactions = [
-  { emoji: "👍", name: "thumbsUp" },
-  { emoji: "❤️", name: "heart" },
-  { emoji: "😄", name: "smile" },
-  { emoji: "🥰", name: "love" },
-];
+const emojiReactions: EmojiReaction[] = [
+  { id: "1", emoji: "👍", name: "thumbsUp" },
+  { id: "2", emoji: "❤️", name: "heart" },
+  { id: "3", emoji: "😊", name: "smile" },
+]
+
+function groupMessagesByDate(messages: any[]) {
+  if (!messages || messages.length === 0) return []
+
+  const grouped: any[] = []
+  let currentDate: string | null = null
+
+  messages.forEach((message) => {
+    const messageDateObj = new Date(message.createdAt)
+    const today = new Date()
+    const isToday =
+      messageDateObj.getDate() === today.getDate() &&
+      messageDateObj.getMonth() === today.getMonth() &&
+      messageDateObj.getFullYear() === today.getFullYear()
+
+    const displayDate = isToday
+      ? "Today"
+      : messageDateObj.toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "short",
+          day: "numeric",
+        })
+
+    if (displayDate !== currentDate) {
+      grouped.push({ date: displayDate })
+      currentDate = displayDate
+    }
+    grouped.push(message)
+  })
+
+  return grouped
+}
 
 function Messages() {
   const {
@@ -785,205 +1270,360 @@ function Messages() {
     unsubscribeFromMessages,
     addReaction,
     isMessagesLoading,
-    isTyping,
     socketConnected,
     socketConnecting,
     socketError,
     retrySocketConnection,
     setReplyToMessage,
-  } = useChatStore();
+  } = useChatStore()
 
-  const { authUser, checkAuth } = useAuthStore();
-  const messageEndRef = useRef<HTMLDivElement>(null);
-  const [activeMessageId, setActiveMessageId] = useState<number | null>(null);
-  const [showReactionMenu, setShowReactionMenu] = useState(false);
-  const [showActionMenu, setShowActionMenu] = useState(false);
+  const { authUser, checkAuth } = useAuthStore()
+  const messageEndRef = useRef<HTMLDivElement>(null)
+  const [activeMessageId, setActiveMessageId] = useState<number | null>(null)
+  const [showReactionMenu, setShowReactionMenu] = useState(false)
+  const [showActionMenu, setShowActionMenu] = useState(false)
+  const [codeBlockDialogOpen, setCodeBlockDialogOpen] = useState(false)
+
+  const groupedMessages = groupMessagesByDate(messages)
 
   // Initialize socket when authUser is available
   useEffect(() => {
-    checkAuth();
+    checkAuth()
     if (authUser?.id && !socketConnected && !socketConnecting && !socketError) {
-      initializeSocket(authUser.id);
+      initializeSocket(authUser.id)
     }
-  }, [
-    authUser?.id,
-    socketConnected,
-    socketConnecting,
-    socketError,
-    initializeSocket,
-    checkAuth,
-  ]);
+  }, [authUser?.id, socketConnected, socketConnecting, socketError, initializeSocket, checkAuth])
 
   // Fetch messages and subscribe when user is selected AND socket is ready
   useEffect(() => {
-    if (!selectedUser?.id) return;
+    if (!selectedUser?.id) return
 
-    getMessages(selectedUser.id);
+    getMessages(selectedUser.id)
 
     if (socketConnected) {
-      subscribeToMessages();
+      subscribeToMessages()
     } else {
-      console.log("Socket not connected, skipping subscription");
+      console.log("Socket not connected, skipping subscription")
     }
 
     return () => {
-      unsubscribeFromMessages();
-    };
-  }, [
-    selectedUser?.id,
-    socketConnected,
-    subscribeToMessages,
-    unsubscribeFromMessages,
-    getMessages,
-  ]);
+      unsubscribeFromMessages()
+    }
+  }, [selectedUser?.id, socketConnected, subscribeToMessages, unsubscribeFromMessages, getMessages])
 
   // Subscribe to socket events when socket becomes connected
   useEffect(() => {
     if (socketConnected && selectedUser?.id) {
-      subscribeToMessages();
+      subscribeToMessages()
     }
-  }, [socketConnected, selectedUser?.id, subscribeToMessages]);
+  }, [socketConnected, selectedUser?.id, subscribeToMessages])
+
+  // Track if we've already loaded messages
+  // const hasLoadedMessages = useRef(false)
+
+  // // Initialize socket when authUser is available
+  // useEffect(() => {
+  //   checkAuth()
+  //   if (authUser?.id && !socketConnected && !socketConnecting && !socketError) {
+  //     initializeSocket(authUser.id)
+  //   }
+  // }, [authUser?.id, socketConnected, socketConnecting, socketError, initializeSocket, checkAuth])
+
+  // // Fetch messages and manage subscriptions
+  // useEffect(() => {
+  //   if (!selectedUser?.id) return
+
+  //   // Only load messages if we haven't already
+  //   if (!hasLoadedMessages.current) {
+  //     getMessages(selectedUser.id)
+  //     hasLoadedMessages.current = true
+  //   }
+
+  //   if (socketConnected) {
+  //     subscribeToMessages()
+  //   }
+
+  //   return () => {
+  //     unsubscribeFromMessages()
+  //     hasLoadedMessages.current = false // Reset when user changes
+  //   }
+  // }, [selectedUser?.id, socketConnected, subscribeToMessages, unsubscribeFromMessages, getMessages])
 
   // Scroll to latest message
   useEffect(() => {
     if (messageEndRef.current && messages.length > 0) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" })
     }
-  }, [messages]);
+  }, [messages])
 
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
-      setShowReactionMenu(false);
-      setShowActionMenu(false);
-    };
+      setShowReactionMenu(false)
+      setShowActionMenu(false)
+      setActiveMessageId(null)
+    }
 
-    document.addEventListener("click", handleClickOutside);
+    document.addEventListener("click", handleClickOutside)
     return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, []);
+      document.removeEventListener("click", handleClickOutside)
+    }
+  }, [])
 
-  const handleAddReaction = async (messageId: string, emoji: string) => {
-    await addReaction(messageId, {
-      id: emoji,
-      native: emoji,
-      name: emoji,
-    });
-    setShowReactionMenu(false);
-  };
+  const handleAddReaction = async (messageId: string, emoji: EmojiReaction) => {
+    try {
+      console.log("🎭 UI: Adding reaction to message:", messageId, emoji)
+
+      // Call the store action to add reaction
+      await addReaction(messageId, {
+        id: emoji.id,
+        native: emoji.emoji,
+        name: emoji.name,
+      })
+
+
+      console.log("🎭 UI: Reaction added successfully")
+
+      // Hide reaction menu after successful addition
+      setShowReactionMenu(false)
+      setActiveMessageId(null)
+    } catch (error) {
+      console.error("🎭💥 UI: Failed to add reaction:", error)
+    }
+  }
+
+
 
   const handleRetryConnection = () => {
     if (authUser?.id) {
-      retrySocketConnection(authUser.id);
+      retrySocketConnection(authUser.id)
     }
-  };
+  }
 
   const handleReply = (message: any) => {
-    setReplyToMessage(message);
-    setShowActionMenu(false);
+    setReplyToMessage(message)
+    setShowActionMenu(false)
+    setActiveMessageId(null)
     // Focus the message input
-    const messageInput = document.querySelector(".DraftEditor-root");
+    const messageInput = document.querySelector(".DraftEditor-root")
     if (messageInput) {
-      (messageInput as HTMLElement).focus();
+      ;(messageInput as HTMLElement).focus()
     }
-  };
+  }
 
-  const parseMessageText = (
-    text: string,
-    linkTitle: string | null,
-    imageUrl: string | null
-  ) => {
-    let cleanText = text;
+  const parseMessageText = (text: string, linkTitle: string | null, imageUrl: string | null) => {
+    let cleanText = text
     if (linkTitle && text && text.includes(linkTitle)) {
-      cleanText = cleanText.replace(linkTitle, "").trim();
+      cleanText = cleanText.replace(linkTitle, "").trim()
     }
     if (imageUrl && text && text.includes("[Image:")) {
-      cleanText = cleanText.replace(/\[Image:.*?\]/g, "").trim();
+      cleanText = cleanText.replace(/\[Image:.*?\]/g, "").trim()
     }
-    return cleanText;
-  };
+    return cleanText
+  }
 
   const toggleReactionMenu = (e: React.MouseEvent, messageId: number) => {
-    e.stopPropagation();
-    setActiveMessageId(messageId);
-    setShowReactionMenu((prev) => !prev);
-    setShowActionMenu(false);
-  };
+    e.stopPropagation()
+    setActiveMessageId(messageId)
+    setShowReactionMenu(true)
+    setShowActionMenu(false)
+  }
 
   const toggleActionMenu = (e: React.MouseEvent, messageId: number) => {
-    e.stopPropagation();
-    setActiveMessageId(messageId);
-    setShowActionMenu((prev) => !prev);
-    setShowReactionMenu(false);
-  };
+    e.stopPropagation()
+    setActiveMessageId(messageId)
+    setShowActionMenu(true)
+    setShowReactionMenu(false)
+  }
 
   if (!selectedUser) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <h3 className="text-lg font-medium">Select a conversation</h3>
-          <p className="text-muted-foreground">
-            Choose a contact to start messaging
-          </p>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div className="relative w-48 h-48 mb-6">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full opacity-60"></div>
+          <div className="absolute inset-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full opacity-80"></div>
+          <div className="absolute inset-8 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="64"
+              height="64"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-blue-400"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+        </div>
+
+        <h3 className="text-2xl font-semibold text-gray-800 mb-2">No conversation selected</h3>
+        <p className="text-gray-500 max-w-md mb-6">
+          Choose a contact from your list to start messaging or create a new conversation
+        </p>
+
+        <div className="flex gap-3">
+          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mr-2"
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <line x1="20" y1="8" x2="20" y2="14"></line>
+              <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
+            New Contact
+          </button>
+          <button className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mr-2"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            New Group
+          </button>
         </div>
       </div>
-    );
+    )
   }
 
   if (isMessagesLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading messages...</p>
+      <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-4 space-y-6">
+        {/* Date separator skeleton */}
+        <div className="flex justify-center my-6">
+          <div className="h-4 w-24 bg-gray-200 rounded-full animate-pulse"></div>
         </div>
+
+        {/* Message skeletons */}
+        {Array.from({ length: 10 }).map((_, index) => (
+          <div key={index} className="flex space-x-3 bg-white rounded-[8px] p-3 shadow-sm relative group animate-pulse">
+            {/* Avatar skeleton */}
+            <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+
+            <div className="flex-1 space-y-3">
+              {/* Header skeleton */}
+              <div className="flex items-center space-x-2">
+                <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                <div className="h-3 w-16 bg-gray-200 rounded"></div>
+              </div>
+
+              {/* Message content skeleton */}
+              <div className="space-y-2">
+                <div className="h-4 w-full bg-gray-200 rounded"></div>
+                <div className="h-4 w-5/6 bg-gray-200 rounded"></div>
+                <div className="h-4 w-4/6 bg-gray-200 rounded"></div>
+              </div>
+
+              {/* Attachment skeleton (randomly shown) */}
+              {index % 3 === 0 && (
+                <div className="flex gap-2">
+                  <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                  <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
-    );
+    )
+  }
+
+  if (messages.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white rounded-lg">
+        <div className="relative w-25 h-25 mb-6">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full opacity-80"></div>
+          <div className="absolute inset-6 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="60"
+              height="60"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-blue-400"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              <line x1="8" y1="10" x2="8" y2="10.01"></line>
+              <line x1="12" y1="10" x2="12" y2="10.01"></line>
+              <line x1="16" y1="10" x2="16" y2="10.01"></line>
+            </svg>
+          </div>
+        </div>
+
+        <h3 className="text-xl text-gray-800 mb-2 font-[600]">No messages yet</h3>
+        <p className="text-gray-500 font-[400]">
+          Start the conversation by sending your first message to {selectedUser?.name || "this user"}
+        </p>
+      </div>
+    )
   }
 
   return (
     <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-4 space-y-6">
-      {messages.map((message: any, index: number) => {
+      {groupedMessages.map((item: any, index: number) => {
+  if (item.date) {
+    return (
+      <div key={`date-${item.date}-${index}`} className="flex justify-center my-6">
+        <span className="text-[#475569] text-sm font-[700]">{item.date}</span>
+      </div>
+    )
+  }
+
+  const message = item
+  // Create a more robust key for messages
+const messageKey = message.id && message.createdAt
+  ? `${message.id}-${message.createdAt}-${index}`
+  : `fallback-${message.senderId}-${message.createdAt}-${index}`
+
         const isOwnMessage =
           message.senderId === authUser?.id ||
           message.senderId === Number(authUser?.id) ||
           message.sender?.id === authUser?.id ||
-          message.sender?.id === Number(authUser?.id);
+          message.sender?.id === Number(authUser?.id)
 
-        const senderName = message.sender?.name || "Unknown User";
-        const cleanMessageText = parseMessageText(
-          message.text || message.content,
-          message.linkTitle,
-          message.imageUrl
-        );
-
-        // Check if this message has a date separator
-        const showDateSeparator = message.date !== undefined;
+        const senderName = message.sender?.name || "Unknown User"
+        const cleanMessageText = parseMessageText(message.text || message.content, message.linkTitle, message.imageUrl)
 
         return (
-          <div key={message.id || index}>
-            {/* Date separator */}
-            {showDateSeparator && (
-              <div className="flex justify-center my-6">
-                <span className="text-[#475569] text-sm font-[700]">
-                  {message.date}
-                </span>
-              </div>
-            )}
-
+          <div key={messageKey}>
             <div
               className="flex space-x-3 bg-white rounded-[8px] p-3 shadow-sm relative group"
               onMouseEnter={() => setActiveMessageId(message.id)}
-              onMouseLeave={() => setActiveMessageId(null)}
+              onMouseLeave={() => {
+                if (!showReactionMenu && !showActionMenu) {
+                  setActiveMessageId(null)
+                }
+              }}
             >
               <div className="w-8 h-8">
                 <Image
-                  src={
-                    isOwnMessage
-                      ? authUser?.avatar || "/images/avatar.png"
-                      : "/images/avatar.png"
-                  }
+                  src={isOwnMessage ? authUser?.avatar || "/images/avatar.png" : "/images/avatar.png"}
                   alt={senderName}
                   width={32}
                   height={32}
@@ -993,26 +1633,13 @@ function Messages() {
 
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
-                  <span className="font-[700] text-base text-[#1E293B]">
-                    {senderName}
-                  </span>
+                  <span className="font-[700] text-base text-[#1E293B]">{senderName}</span>
                   {message.sender?.id === 1 && (
                     <Badge className="bg-[#EEF2FF] text-[#4F46E5] text-xs px-2 py-1 rounded-[3px] font-[700]">
                       Admin
                     </Badge>
                   )}
-                  <span className="text-[#94A3B8] text-sm font-[500]">
-                    {formatMessageTime(message.createdAt)}
-                  </span>
-                  {isOwnMessage && (
-                    <span className="text-xs">
-                      {message.seen ? (
-                        <CheckCheck className="h-3 w-3 text-blue-500" />
-                      ) : (
-                        <Check className="h-3 w-3" />
-                      )}
-                    </span>
-                  )}
+                  <span className="text-[#94A3B8] text-sm font-[500]">{formatMessageTime(message.createdAt)}</span>
                 </div>
 
                 {/* Quote */}
@@ -1020,11 +1647,7 @@ function Messages() {
                   <div className="border-l-4 border-[#0053F2] bg-[#FCFCFC] p-2 mb-3 rounded-r">
                     <div className="flex items-center space-x-2 mb-1">
                       <Image
-                        src={
-                          // message.quote?.avatar ||
-                          // message.replyToMessage?.sender?.avatar ||
-                          "/images/avatar.png"
-                        }
+                        src="/images/avatar.png"
                         alt="Quote author"
                         width={20}
                         height={20}
@@ -1032,16 +1655,10 @@ function Messages() {
                       />
                       <div className="flex items-center justify-between w-full">
                         <div className="text-[#0053F2] text-sm font-[400]">
-                          {message.quote?.text ||
-                            message.replyToMessage?.text ||
-                            message.replyToMessage?.content ||
-                            ""}
+                          {message.quote?.text || message.replyToMessage?.text || message.replyToMessage?.content || ""}
                         </div>
                         <div className="text-[#656F7D] text-sm font-[400]">
-                          —{" "}
-                          {message.quote?.parts ||
-                            message.replyToMessage?.sender?.name ||
-                            "User"}
+                          — {message.quote?.parts || message.replyToMessage?.sender?.name || "User"}
                         </div>
                       </div>
                     </div>
@@ -1055,21 +1672,12 @@ function Messages() {
                     fontWeight: message.bold ? "bold" : "normal",
                     fontStyle: message.italic ? "italic" : "normal",
                     textDecoration: message.underline ? "underline" : "none",
-                    listStyleType: message.unorderedList
-                      ? "disc"
-                      : message.orderedList
-                      ? "decimal"
-                      : "none",
-                    paddingLeft:
-                      message.unorderedList || message.orderedList
-                        ? "20px"
-                        : "12px",
+                    listStyleType: message.unorderedList ? "disc" : message.orderedList ? "decimal" : "none",
+                    paddingLeft: message.unorderedList || message.orderedList ? "20px" : "12px",
                   }}
                 >
                   {cleanMessageText}
-                  {message.emoji && (
-                    <span className="ml-0">{message.emoji}</span>
-                  )}
+                  {message.emoji && <span className="ml-0">{message.emoji}</span>}
                 </p>
 
                 {/* Attachments */}
@@ -1082,61 +1690,119 @@ function Messages() {
                         className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
                       >
                         <Image
-                          src={LinkSimple}
+                          src={LinkSimple || "/placeholder.svg"}
                           width={16}
                           height={16}
                           alt="icon"
                           className="mr-2"
                         />
-                        <p className="text-[#475569] font-[700] text-sm">
-                          {message.linkTitle}
-                        </p>
+                        <p className="text-[#475569] font-[700] text-sm">{message.linkTitle}</p>
                       </Button>
                     )}
 
-                    {message.imageName && (
+                    {message.imageName && message.imageUrl && (
+                      <a href={message.imageUrl} target="_blank" rel="noreferrer">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
+                        >
+                          <Image
+                            src={FileImage || "/placeholder.svg"}
+                            width={16}
+                            height={16}
+                            alt="icon"
+                            className="mr-2"
+                          />
+                          <p className="text-[#475569] font-[700] text-sm">{message.imageName}</p>
+                        </Button>
+                      </a>
+                    )}
+
+                    {message.codeLanguage && message.codeContent && (
                       <Button
                         variant="outline"
                         size="sm"
                         className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
+                        onClick={() => setCodeBlockDialogOpen(true)}
                       >
                         <Image
-                          src="/images/avatar.png"
+                          src={DeviceMobileCamera || "/placeholder.svg"}
                           width={16}
                           height={16}
                           alt="icon"
                           className="mr-2"
                         />
-                        <p className="text-[#475569] font-[700] text-sm">
-                          {message.imageName}
-                        </p>
+                        <p className="text-[#475569] font-[700] text-sm">{message.codeLanguage} Code</p>
                       </Button>
                     )}
+
+                    {/* Code Block Dialog */}
+                    <Dialog open={codeBlockDialogOpen} onOpenChange={setCodeBlockDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-[#6c7275] hover:bg-[#f8fafc] cursor-pointer">
+                          <Image src={TablerCode || "/placeholder.svg"} width={20} height={20} alt="icon" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                          <DialogTitle>Code Block</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="code-language">Language</Label>
+                            <p>{message.codeLanguage}</p>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="code-content">Code</Label>
+                            <p
+                              id="code-content"
+                              className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                            >
+                              {message.codeContent}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setCodeBlockDialogOpen(false)}>
+                            Ok
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 )}
 
                 {/* Reactions */}
                 {message.reactions && message.reactions.length > 0 && (
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-4 mt-2">
                     {message.reactions.map((reaction: any, idx: number) => (
                       <div
-                        key={idx}
+                        key={`${reaction.id || idx}-${reaction.emoji?.name || reaction.name}`}
                         className={`flex items-center space-x-1.5 ${
                           !message.quote
                             ? "bg-[#F1F5F9] py-1 px-2 rounded-[3px]"
                             : "bg-[#F7F7F7] border border-[#EEEDF0] py-1 px-2 rounded-[19px]"
-                        } cursor-pointer`}
+                        } cursor-pointer hover:bg-gray-200 transition-colors`}
                       >
                         <span
                           className={`${
-                            !message.quote
-                              ? "text-base font-[700] text-[#475569]"
-                              : "text-xs font-[400] text-[#646464]"
+                            !message.quote ? "text-base font-[700] text-[#475569]" : "text-xs font-[400] text-[#646464]"
                           }`}
                         >
-                          {reaction.count}
+                          {reaction.count || 1}
                         </span>
-                        <span>{reaction.emoji.native}</span>
+                        <span>
+                          {(reaction.emoji?.name === "heart" || reaction.name === "heart") && (
+                            <Image src={Emoji1 || "/placeholder.svg"} width={16} height={16} alt="heart" />
+                          )}
+                          {(reaction.emoji?.name === "thumbsUp" || reaction.name === "thumbsUp") && (
+                            <Image src={Emoji2 || "/placeholder.svg"} width={16} height={16} alt="thumbsUp" />
+                          )}
+                          {(reaction.emoji?.name === "smile" || reaction.name === "smile") && (
+                            <Image src={Emoji3 || "/placeholder.svg"} width={16} height={16} alt="smile" />
+                          )}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -1145,22 +1811,28 @@ function Messages() {
 
               {/* Emoji reaction and action menu (visible on hover) */}
               {activeMessageId === message.id && (
-                <div className="absolute right-3 top-[-30px] flex items-center space-x-2 bg-[#1E1E1E] rounded-full px-2 py-1 shadow-lg z-10">
+                <div className="absolute right-3 top-[-30px] flex items-center space-x-2 bg-[#F8FAFC] rounded-full px-2 py-1 shadow-lg z-10">
                   <div className="flex space-x-1">
                     {emojiReactions.map((item) => (
                       <button
                         key={item.name}
-                        className="hover:bg-gray-700 p-1 rounded-full transition-colors"
-                        onClick={(e) =>
-                          handleAddReaction(message.id.toString(), item.emoji)
-                        }
+                        className={`hover:bg-slate-300 p-[1px] rounded-full transition-colors cursor-pointer ${
+                          message.isReacting ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (!message.isReacting) {
+                            handleAddReaction(message.id.toString(), item)
+                          }
+                        }}
+                        disabled={message.isReacting}
                       >
                         <span className="text-lg">{item.emoji}</span>
                       </button>
                     ))}
                   </div>
                   <button
-                    className="text-white hover:bg-gray-700 p-1 rounded-full transition-colors"
+                    className="text-[#475569] cursor-pointer transition-colors"
                     onClick={(e) => toggleActionMenu(e, message.id)}
                   >
                     <span className="text-xl cursor-pointer">⋯</span>
@@ -1170,23 +1842,15 @@ function Messages() {
 
               {/* Action menu (visible when clicked) */}
               {!showActionMenu && activeMessageId === message.id && (
-                <div className="absolute right-3 top-10 bg-white rounded-md shadow-lg z-20 w-48 py-1 border border-gray-200">
+                <div className="absolute right-3 top-6 bg-white rounded-md shadow-lg z-20 w-48 py-1 border border-gray-200">
                   <button
-                    className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm"
+                    className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm cursor-pointer"
                     onClick={() => handleReply(message)}
                   >
                     <Reply className="w-4 h-4" />
                     <span>Reply</span>
                   </button>
-                  {/* <button className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm">
-                    <Forward className="w-4 h-4" />
-                    <span>Forward</span>
-                  </button>
-                  <button className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm">
-                    <Link2 className="w-4 h-4" />
-                    <span>Copy link</span>
-                  </button> */}
-                  <button className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm">
+                  <button className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm cursor-pointer">
                     <Trash2 className="w-4 h-4" />
                     <span>Delete</span>
                   </button>
@@ -1194,11 +1858,11 @@ function Messages() {
               )}
             </div>
           </div>
-        );
+        )
       })}
       <div ref={messageEndRef} />
     </div>
-  );
+  )
 }
 
-export default Messages;
+export default Messages

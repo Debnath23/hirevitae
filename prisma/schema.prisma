@@ -130,6 +130,8 @@ model Reaction {
   emojiId     String   // Unique identifier for the emoji
   emojiNative String   // The actual emoji character (e.g., "👍")
   emojiName   String   // Name of the emoji (e.g., "thumbs_up")
+
+  count       Int      @default(1)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

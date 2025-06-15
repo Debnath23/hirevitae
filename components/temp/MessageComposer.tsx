@@ -804,26 +804,27 @@ export default function MessageComposer() {
     subscribeToMessages,
     replyToMessage,
     clearReplyToMessage,
+    isMessageSending,
   } = useChatStore();
-  const { authUser } = useAuthStore();
+  // const { authUser } = useAuthStore();
 
-  useEffect(() => {
-    if (authUser?.id) {
-      const init = async () => {
-        try {
-          await initializeSocket(authUser.id);
+  // useEffect(() => {
+  //   if (authUser?.id) {
+  //     const init = async () => {
+  //       try {
+  //         await initializeSocket(authUser.id);
 
-          if (socketConnected) {
-            await subscribeToMessages();
-          }
-        } catch (error) {
-          console.error("Socket initialization failed:", error);
-        }
-      };
+  //         if (socketConnected) {
+  //           await subscribeToMessages();
+  //         }
+  //       } catch (error) {
+  //         console.error("Socket initialization failed:", error);
+  //       }
+  //     };
 
-      init();
-    }
-  }, [authUser?.id, initializeSocket, socketConnected, subscribeToMessages]);
+  //     init();
+  //   }
+  // }, [authUser?.id, initializeSocket, socketConnected, subscribeToMessages]);
 
   const handleEditorChange = (state: EditorState) => {
     setEditorState(state);
@@ -1297,17 +1298,17 @@ export default function MessageComposer() {
 
           <Button
             onClick={handleSendMessage}
-            disabled={!selectedUser}
+            disabled={!selectedUser && isMessageSending}
             className="bg-[#0CAF60] text-white hover:bg-[#16a34a] rounded-[3px] px-4 py-2 cursor-pointer flex items-center space-x-2 disabled:opacity-50"
           >
-            <Image
+            {!isMessageSending && <Image
               src={Send || "/placeholder.svg"}
               width={20}
               height={20}
               alt="icon"
-            />
+            />}
             <p className="font-[500] text-sm">
-              {replyToMessage ? "Reply" : "Send"}
+              {replyToMessage ? "Reply" : isMessageSending ? "Sending..." : "Send"}
             </p>
           </Button>
         </div>
