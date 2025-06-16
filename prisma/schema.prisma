@@ -60,42 +60,22 @@ model User {
 model Message {
   id            Int      @id @default(autoincrement())
   text          String?  @db.Text
-  
-  // For reply messages: stores reference to the original message
-  // Both regular messages and reply messages are stored in this table
   metadata      String?  @db.Text // JSON: { replyToId, replyToSenderId, replyToContent }
-  
-  // Text formatting fields
   bold          Boolean  @default(false)
   italic        Boolean  @default(false)
   underline     Boolean  @default(false)
-  
-  // List formatting fields
   unorderedList Boolean  @default(false)
   orderedList   Boolean  @default(false)
-  
-  // Font styling fields
   fontSize      String   @default("14") @db.VarChar(10)
-  
-  // Link fields
   linkTitle     String?  @db.Text
   linkTarget    String?  @db.Text
-  
-  // Emoji field
   emoji         String?  @db.VarChar(10)
-  
-  // Image field
   imageName     String?  @db.Text
   imageUrl      String?  @db.Text
-  
-  // Code block fields
   codeLanguage  String?  @db.VarChar(50)
   codeContent   String?  @db.Text
-  
-  // Message status
+
   seen          Int      @default(0) @db.Int // 0=not seen, 1=seen
-  
-  // Foreign keys
   senderId      Int
   receiverId    Int
 

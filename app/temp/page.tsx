@@ -2,10 +2,7 @@
 
 import { useChatStore } from "@/store/useChatStore";
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Vector,
   Users,
@@ -16,27 +13,14 @@ import {
   ChatText,
   BankCard,
   Logout,
-  ChevronDown,
-  Verified,
-  EmployersLogo,
-  Twitter,
-  Linkedin,
-  Instagram,
-  Youtube,
-  Alarm,
-  Star,
-  Img,
-  AtSign,
-  BellSimple,
-  AlertCircle,
-  File,
-  Calendar,
 } from "@/public/icons/index";
 import { signOut } from "next-auth/react";
 import MessagesSection from "@/components/temp/MessagesSection";
 import ConversationDetailSection from "@/components/temp/ConversationDetailSection";
 import NoConversationDetailSelectedContainer from "@/components/temp/NoConversationDetailSelectedContainer";
 import CandidateDetailsSection from "@/components/temp/CandidateDetailsSection";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useEffect } from "react";
 
 const sidebarItems = [
   { icon: Vector, color: "#6e6af0", isActive: false },
@@ -50,50 +34,13 @@ const sidebarItems = [
   { icon: Logout, color: "#6c7275", isActive: false },
 ];
 
-const socialLinks = [
-  { icon: EmployersLogo, color: "#E7F0FA", href: "#" },
-  { icon: Twitter, color: "#0961F5", href: "#" },
-  { icon: Linkedin, color: "#E7F0FA", href: "#" },
-  { icon: Instagram, color: "#E7F0FA", href: "#" },
-  { icon: Youtube, color: "#E7F0FA", href: "#" },
-];
-
-const statsItems = [
-  { icon: Star, label: "Your star messages", count: 0, color: "#FFF7E7" },
-  { icon: Img, label: "Docs, files, media", count: 96, color: "#FFEEF7" },
-  { icon: AtSign, label: "Tagged", count: 1, color: "#E1EBFF" },
-];
-
-const activities = [
-  {
-    id: 1,
-    title: "Payroll payment is due",
-    subtitle: "Payroll due: Process #py22240932 promptly",
-    time: "3min ago",
-    color: "#DE1C411A",
-    icon: AlertCircle,
-  },
-  {
-    id: 2,
-    title: "Document approval",
-    subtitle: "New document need to be checked contract...doc or #emp22240654",
-    time: "21h ago",
-    color: "#F0EBFD",
-    icon: File,
-  },
-  {
-    id: 3,
-    title: "New Meeting",
-    subtitle:
-      "Angela has set up new meeting for July 30 Monthly report meeting for July 2024",
-    time: "2h ago",
-    color: "#FFF4E5",
-    icon: Calendar,
-  },
-];
-
-export default function HomePage() {
+export default function Temp() {
   const { selectedUser } = useChatStore();
+  const { checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth()
+  }, [])
   return (
     <div className="flex h-screen my-0 bg-[#f8fafc] w-[1440px] mx-auto">
       <style jsx global>{`

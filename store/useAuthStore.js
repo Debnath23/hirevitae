@@ -1,98 +1,9 @@
-// import { create } from "zustand"
-// import { api } from "@/lib/axios"
-// // import toast from "react-hot-toast"
+import { create } from "zustand";
+import { api } from "@/lib/axios";
+import { toast } from "sonner";
+import { io } from "socket.io-client";
 
-// export const useAuthStore = create((set, get) => ({
-//   authUser: null,
-//   isSigningUp: false,
-//   isLoggingIn: false,
-//   isLoggingOut: false,
-//   isUpdatingProfile: false,
-//   isCheckingAuth: false,
-//   onlineUsers: [],
-
-//   checkAuth: async () => {
-//     set({ isCheckingAuth: true })
-//     try {
-//       console.log("Checking from authStore")
-//       const response = await api.get("/auth/me")
-//       set({ authUser: response.data.user, isCheckingAuth: false })
-//     } catch (error) {
-//       console.error("Error checking auth:", error)
-//       set({ authUser: null })
-//     } finally {
-//       set({ isCheckingAuth: false })
-//     }
-//   },
-
-//   signUp: async (userData) => {
-//     set({ isSigningUp: true })
-//     try {
-//       const response = await api.post("/auth/signup", {
-//         name: userData.fullName, // Map fullName to name
-//         email: userData.email,
-//         password: userData.password,
-//       })
-//       toast.success("Sign up successful!")
-//       set({ authUser: response.data.user, isSigningUp: false })
-//     } catch (error) {
-//       toast.error(error.response?.data?.message || "Sign up failed. Please try again.")
-//       console.error("Error signing up:", error)
-//     } finally {
-//       set({ isSigningUp: false })
-//     }
-//   },
-
-//   logIn: async (credentials) => {
-//     set({ isLoggingIn: true })
-//     try {
-//       const response = await api.post("/auth/login", credentials)
-//       toast.success("Logged in successfully!")
-//       set({ authUser: response.data.user, isLoggingIn: false })
-//     } catch (error) {
-//       toast.error(error.response?.data?.message || "Login failed. Please check your credentials.")
-//       console.error("Error logging in:", error)
-//     } finally {
-//       set({ isLoggingIn: false })
-//     }
-//   },
-
-//   logOut: async () => {
-//     set({ isLoggingOut: true })
-//     try {
-//       await api.post("/auth/logout")
-//       toast.success("Logged out successfully!")
-//       set({ authUser: null, isLoggingOut: false })
-//     } catch (error) {
-//       toast.error("Error logging out. Please try again.")
-//       console.error("Error logging out:", error)
-//     } finally {
-//       set({ isLoggingOut: false })
-//     }
-//   },
-
-//   updateProfile: async (formData) => {
-//     set({ isUpdatingProfile: true })
-//     try {
-//       const response = await api.put("/auth/profile", formData, {
-//         headers: {
-//           "Content-Type": "multipart/form-data",
-//         },
-//       })
-//       toast.success("Profile updated successfully!")
-//       set({ authUser: response.data.user })
-//     } catch (error) {
-//       toast.error(error.response?.data?.message || "Failed to update profile")
-//       console.error("Error updating profile:", error)
-//     } finally {
-//       set({ isUpdatingProfile: false })
-//     }
-//   },
-// }))
-
-import { create } from "zustand"
-import { api } from "@/lib/axios"
-import { toast } from "sonner"
+const BASE_URL = "http://localhost:3001";
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
@@ -102,99 +13,131 @@ export const useAuthStore = create((set, get) => ({
   isUpdatingProfile: false,
   isCheckingAuth: false,
   onlineUsers: [],
+  socket: null,
 
   checkAuth: async () => {
-    set({ isCheckingAuth: true })
+    set({ isCheckingAuth: true });
     try {
-      console.log("Checking from authStore")
-      const response = await api.get("/auth/me")
-      set({ authUser: response.data.user, isCheckingAuth: false })
+      const response = await api.get("/auth/me");
+      set({ authUser: response.data.user, isCheckingAuth: false });
+      get().connectSocket();
     } catch (error) {
-      console.error("Error checking auth:", error)
-      set({ authUser: null })
+      console.error("Error checking auth:", error);
+      set({ authUser: null });
     } finally {
-      set({ isCheckingAuth: false })
+      set({ isCheckingAuth: false });
     }
   },
 
   signUp: async (userData) => {
-    set({ isSigningUp: true })
+    set({ isSigningUp: true });
     try {
       const response = await api.post("/auth/signup", {
         name: userData.fullName,
         email: userData.email,
         password: userData.password,
-      })
-      toast.success("Sign up successful!")
-      set({ authUser: response.data.user, isSigningUp: false })
+      });
+      toast.success("Sign up successful!");
+      set({ authUser: response.data.user, isSigningUp: false });
+      get().connectSocket();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Sign up failed. Please try again.")
-      console.error("Error signing up:", error)
+      toast.error(
+        error.response?.data?.message || "Sign up failed. Please try again."
+      );
+      console.error("Error signing up:", error);
     } finally {
-      set({ isSigningUp: false })
+      set({ isSigningUp: false });
     }
   },
 
   logIn: async (credentials) => {
-    set({ isLoggingIn: true })
+    set({ isLoggingIn: true });
     try {
-      const response = await api.post("/auth/login", credentials)
-      toast.success("Logged in successfully!")
-      set({ authUser: response.data.user, isLoggingIn: false })
+      const response = await api.post("/auth/login", credentials);
+      toast.success("Logged in successfully!");
+      set({ authUser: response.data.user, isLoggingIn: false });
+      get().connectSocket();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed. Please check your credentials.")
-      console.error("Error logging in:", error)
+      toast.error(
+        error.response?.data?.message ||
+          "Login failed. Please check your credentials."
+      );
+      console.error("Error logging in:", error);
     } finally {
-      set({ isLoggingIn: false })
+      set({ isLoggingIn: false });
     }
   },
 
   logOut: async () => {
-    set({ isLoggingOut: true })
+    set({ isLoggingOut: true });
     try {
-      await api.post("/auth/logout")
-      toast.success("Logged out successfully!")
-      set({ authUser: null, isLoggingOut: false, onlineUsers: [] })
+      await api.post("/auth/logout");
+      toast.success("Logged out successfully!");
+      set({ authUser: null, isLoggingOut: false, onlineUsers: [] });
+      get().disconnectSocket();
     } catch (error) {
-      toast.error("Error logging out. Please try again.")
-      console.error("Error logging out:", error)
+      toast.error("Error logging out. Please try again.");
+      console.error("Error logging out:", error);
     } finally {
-      set({ isLoggingOut: false })
+      set({ isLoggingOut: false });
     }
   },
 
   updateProfile: async (formData) => {
-    set({ isUpdatingProfile: true })
+    set({ isUpdatingProfile: true });
     try {
       const response = await api.put("/auth/profile", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      })
-      toast.success("Profile updated successfully!")
-      set({ authUser: response.data.user })
+      });
+      toast.success("Profile updated successfully!");
+      set({ authUser: response.data.user });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update profile")
-      console.error("Error updating profile:", error)
+      toast.error(error.response?.data?.message || "Failed to update profile");
+      console.error("Error updating profile:", error);
     } finally {
-      set({ isUpdatingProfile: false })
+      set({ isUpdatingProfile: false });
     }
   },
 
-  // Online users management
-  setOnlineUsers: (users) => {
-    set({ onlineUsers: users })
+  connectSocket: () => {
+    const { authUser, socket } = get();
+
+    if (!authUser || (socket && socket.connected)) return;
+
+    if (socket) {
+      socket.off();
+      socket.disconnect();
+    }
+
+    const newSocket = io(BASE_URL, {
+      query: {
+        userId: authUser.id,
+      },
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      transports: ["websocket"],
+    });
+
+    newSocket.on("disconnect", (reason) => {
+      if (reason === "io server disconnect") {
+        newSocket.connect();
+      }
+    });
+
+    newSocket.on("getOnlineUsers", (userIds) => {
+      set({ onlineUsers: userIds });
+    });
+
+    set({ socket: newSocket });
   },
 
-  addOnlineUser: (userId) => {
-    const { onlineUsers } = get()
-    if (!onlineUsers.includes(userId)) {
-      set({ onlineUsers: [...onlineUsers, userId] })
+  disconnectSocket: () => {
+    const socket = get().socket;
+    if (socket?.connected) {
+      socket.off();
+      socket.disconnect();
     }
   },
-
-  removeOnlineUser: (userId) => {
-    const { onlineUsers } = get()
-    set({ onlineUsers: onlineUsers.filter((id) => id !== userId) })
-  },
-}))
+}));
