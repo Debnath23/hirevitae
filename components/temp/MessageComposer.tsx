@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { EditorState, RichUtils, Modifier } from "draft-js";
 import { Editor } from "draft-js";
@@ -161,6 +161,8 @@ export default function MessageComposer() {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [emojiPopoverOpen, setEmojiPopoverOpen] = useState(false);
   const [codeBlockDialogOpen, setCodeBlockDialogOpen] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     selectedUser,
@@ -182,10 +184,6 @@ export default function MessageComposer() {
     clearReplyToMessage,
     isMessageSending,
   } = useChatStore();
-
-  const handleEditorChange = (state: EditorState) => {
-    setEditorState(state);
-  };
 
   const handleToggleInlineStyle = (style: string) => {
     setEditorState(RichUtils.toggleInlineStyle(editorState, style));
@@ -264,6 +262,48 @@ export default function MessageComposer() {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
   };
+
+  const handleTyping = (isCurrentlyTyping: boolean) => {
+    if (!selectedUser) return;
+
+    if (isCurrentlyTyping !== isTyping) {
+      setIsTyping(isCurrentlyTyping);
+
+      const { socket } =
+        require("@/store/useAuthStore").useAuthStore.getState();
+      if (socket && socket.connected) {
+        socket.emit("typing", {
+          receiverId: selectedUser.id,
+          isTyping: isCurrentlyTyping,
+        });
+      }
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    if (isCurrentlyTyping) {
+      typingTimeoutRef.current = setTimeout(() => {
+        handleTyping(false);
+      }, 2000);
+    }
+  };
+
+  const handleEditorChange = (state: EditorState) => {
+    const content = state.getCurrentContent().getPlainText();
+    handleTyping(content.length > 0);
+    setEditorState(state);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      handleTyping(false);
+    };
+  }, [selectedUser]);
 
   return (
     <div className="px-6 py-4">

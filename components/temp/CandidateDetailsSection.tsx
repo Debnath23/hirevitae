@@ -23,6 +23,7 @@ import {
   Calendar,
 } from "@/public/icons/index";
 import { useChatStore } from "@/store/useChatStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const socialLinks = [
   { icon: EmployersLogo, color: "#E7F0FA", href: "#" },
@@ -68,6 +69,9 @@ const activities = [
 
 function CandidateDetailsSection() {
   const { selectedUser } = useChatStore();
+  const { isUserOnline } = useAuthStore();
+
+  const online = isUserOnline(selectedUser?.id);
 
   if (!selectedUser) {
     return (
@@ -101,8 +105,12 @@ function CandidateDetailsSection() {
           <div className="absolute bottom-4 right-1">
             <Image src={Verified} width={21.19} height={21.19} alt="icon" />
           </div>
-          <Badge className="absolute -bottom-2 left-9 bg-[#E9FAF7] text-[#31B465] text-xs font-[600] px-2 py-1 rounded-[3px]">
-            Online
+          <Badge
+            className={`absolute -bottom-2 left-9 ${
+              online ? "bg-[#E9FAF7] text-[#31B465]" : "bg-white text-slate-500"
+            } text-xs font-[600] px-2 py-1 rounded-[3px]`}
+          >
+            {online ? "Online" : "Offline"}
           </Badge>
         </div>
 

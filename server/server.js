@@ -28,7 +28,7 @@ const io = new Server(server, {
 const userSocketMap = {};
 
 function getReceiverSocketId(receiverId) {
-  return userSocketMap[receiverId];
+  return userSocketMap[receiverId]?.socketId;
 }
 
 io.on("connection", (socket) => {
@@ -41,7 +41,18 @@ io.on("connection", (socket) => {
 
   userSocketMap[userId] = socket.id;
 
-  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+  userSocketMap[userId] = {
+    socketId: socket.id,
+    isOnline: true,
+  };
+
+  io.emit(
+    "getOnlineUsers",
+    Object.entries(userSocketMap).map(([id, data]) => ({
+      userId: id,
+      isOnline: data.isOnline,
+    }))
+  );
 
   socket.on("newMessage", (message) => {
     try {
@@ -62,9 +73,11 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("typing", ({ senderId, receiverId, isTyping }) => {
+  socket.on("typing", ({ receiverId, isTyping }) => {
     try {
+      const senderId = String(socket.handshake.query.userId);
       const receiverSocketId = getReceiverSocketId(receiverId);
+
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("userTyping", {
           senderId,
@@ -92,8 +105,17 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     if (userSocketMap[userId] === socket.id) {
+      userSocketMap[userId].isOnline = false;
+
       delete userSocketMap[userId];
-      io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+      io.emit(
+        "getOnlineUsers",
+        Object.entries(userSocketMap).map(([id, data]) => ({
+          userId: id,
+          isOnline: data.isOnline,
+        }))
+      );
     }
   });
 

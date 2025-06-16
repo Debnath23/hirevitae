@@ -17,8 +17,10 @@ import {
 
 function ConversationHeader() {
   const { selectedUser } = useChatStore();
-  const { onlineUsers } = useAuthStore();
+  const { isUserOnline } = useAuthStore();
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+
+  const online = isUserOnline(selectedUser?.id)
 
   if (!selectedUser) {
     return (
@@ -47,7 +49,7 @@ function ConversationHeader() {
             {/* Online Status Indicator */}
             <div
               className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
-                onlineUsers.includes(selectedUser.id)
+                online
                   ? "bg-[#22C55E]"
                   : "bg-[#CBD5E1]"
               }`}
@@ -61,19 +63,19 @@ function ConversationHeader() {
               {/* Dynamic Online/Offline Badge */}
               <Badge
                 className={`${
-                  onlineUsers.includes(selectedUser.id)
+                  online
                     ? "bg-[#F0FDF4] border border-[#BBF7D0] text-[#22C55E]"
                     : "bg-[#F8FAFC] border border-[#E2E8F0] text-[#64748B]"
                 } font-[700] text-xs px-2 py-1 rounded-[3px] flex items-center`}
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full mr-1 ${
-                    onlineUsers.includes(selectedUser.id)
+                    online
                       ? "bg-[#22C55E]"
                       : "bg-[#CBD5E1]"
                   }`}
                 ></span>
-                {onlineUsers.includes(selectedUser.id) ? "Online" : "Offline"}
+                {online ? "Online" : "Offline"}
               </Badge>
             </div>
 
@@ -157,7 +159,7 @@ function ConversationHeader() {
                   />
                   <div
                     className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
-                      onlineUsers.includes(selectedUser.id)
+                      online
                         ? "bg-[#22C55E]"
                         : "bg-[#CBD5E1]"
                     }`}
@@ -185,12 +187,12 @@ function ConversationHeader() {
                     <span className="text-[#64748B]">Status:</span>
                     <span
                       className={
-                        onlineUsers.includes(selectedUser.id)
+                        online
                           ? "text-[#22C55E]"
                           : "text-[#64748B]"
                       }
                     >
-                      {onlineUsers.includes(selectedUser.id)
+                      {online
                         ? "Online"
                         : "Offline"}
                     </span>

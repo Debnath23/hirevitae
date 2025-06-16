@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api } from "@/lib/axios";
+import { toast } from "sonner";
 
 interface FormattingState {
   bold: boolean;
@@ -56,6 +57,8 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
+  isTyping?: boolean;
+  lastMessage?: string;
 }
 
 interface ChatStore {
@@ -68,6 +71,7 @@ interface ChatStore {
   replyToMessage: Message | null;
   isMessageSending: boolean;
   isSubscribed: boolean;
+  typingStatus: Record<string, boolean>;
 
   // Actions
   getUsers: () => Promise<void>;
@@ -84,6 +88,8 @@ interface ChatStore {
   // Reply functionality
   setReplyToMessage: (message: Message | null) => void;
   clearReplyToMessage: () => void;
+
+  setTypingStatus: (userId: string, isTyping: boolean) => void;
 
   // Formatting actions
   toggleBold: () => void;
@@ -111,6 +117,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   replyToMessage: null,
   isMessageSending: false,
   isSubscribed: false,
+  typingStatus: {},
 
   formatting: {
     bold: false,
@@ -166,14 +173,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       !!require("@/store/useAuthStore").useAuthStore.getState().authUser;
     const socketConnected = socket?.connected;
 
-    console.log("Subscription conditions:", {
-      isSubscribed,
-      hasSelectedUser,
-      hasSocket,
-      hasAuthUser,
-      socketConnected,
-    });
-
     if (
       isSubscribed ||
       !hasSelectedUser ||
@@ -181,21 +180,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       !hasAuthUser ||
       !socketConnected
     ) {
-      console.log("Subscription conditions not met:", {
-        isSubscribed,
-        hasSelectedUser,
-        hasSocket,
-        hasAuthUser,
-        socketConnected,
-      });
       return;
     }
 
-    // Listen for incoming messages
     socket.on("newMessage", (message: Message) => {
-      console.log("📥 Received new message via socket:", message);
       get().addMessage(message);
     });
+
+    socket.on(
+      "userTyping",
+      ({ senderId, isTyping }: { senderId: string; isTyping: boolean }) => {
+        get().setTypingStatus(senderId, isTyping);
+      }
+    );
 
     set({ isSubscribed: true });
     console.log("✅ Message subscription set up successfully");
@@ -239,6 +236,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         replyToMessageState?.text || replyToMessageState?.content || null,
     };
 
+    set({ isMessageSending: true });
+
     try {
       const response = await api.post(
         `/messages/send/${selectedUser.id}`,
@@ -256,7 +255,22 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       }
     } catch (error) {
       console.error("Error sending formatted message:", error);
+      toast.error("Failed to sent message!");
+    } finally {
+      set({ isMessageSending: false });
     }
+  },
+
+  setTypingStatus: (userId, isTyping) => {
+    set((state) => ({
+      typingStatus: {
+        ...state.typingStatus,
+        [userId]: isTyping,
+      },
+      users: state.users.map((user) =>
+        user.id === userId ? { ...user, isTyping } : user
+      ),
+    }));
   },
 
   setSelectedUser: (user: User) => {

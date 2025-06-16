@@ -12,7 +12,8 @@ export const useAuthStore = create((set, get) => ({
   isLoggingOut: false,
   isUpdatingProfile: false,
   isCheckingAuth: false,
-  onlineUsers: [],
+  onlineUsers: {},
+  typingUsers: {},
   socket: null,
 
   checkAuth: async () => {
@@ -126,8 +127,14 @@ export const useAuthStore = create((set, get) => ({
       }
     });
 
-    newSocket.on("getOnlineUsers", (userIds) => {
-      set({ onlineUsers: userIds });
+    newSocket.on("getOnlineUsers", (users) => {
+      const onlineUsersMap = users.reduce((acc, user) => {
+        acc[user.userId] = {
+          isOnline: user.isOnline,
+        };
+        return acc;
+      }, {});
+      set({ onlineUsers: onlineUsersMap });
     });
 
     set({ socket: newSocket });
@@ -139,5 +146,22 @@ export const useAuthStore = create((set, get) => ({
       socket.off();
       socket.disconnect();
     }
+  },
+
+  isUserOnline: (userId) => {
+    return get().onlineUsers[userId]?.isOnline || false;
+  },
+
+  setUserTyping: (userId, isTyping) => {
+    set((state) => ({
+      typingUsers: {
+        ...state.typingUsers,
+        [userId]: isTyping,
+      },
+    }));
+  },
+
+  isUserTyping: (userId) => {
+    return get().typingUsers[userId] || false;
   },
 }));

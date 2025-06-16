@@ -2,24 +2,50 @@
 
 import { useChatStore } from "@/store/useChatStore";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Plus, Filter, Search, SeenCheckmark } from "@/public/icons/index";
 import { Input } from "../ui/input";
 import formatMessageTime from "@/lib/format-message-time";
 import { useAuthStore } from "@/store/useAuthStore";
-import { User } from "@/lib/types";
 
 export default function MessagesSection() {
-  const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } =
-    useChatStore();
+  const {
+    getUsers,
+    users,
+    selectedUser,
+    setSelectedUser,
+    isUsersLoading,
+    typingStatus,
+  } = useChatStore();
 
-  const { onlineUsers } = useAuthStore();
+  const { isUserOnline } = useAuthStore();
 
   useEffect(() => {
     getUsers();
   }, [getUsers]);
+
+  type ChatUser = (typeof users)[number] & {
+    lastMessageTime?: string | null;
+  };
+
+  const sortedUsers = useMemo(() => {
+    return [...(users as ChatUser[])].sort((a, b) => {
+      const aOnline = isUserOnline(a.id);
+      const bOnline = isUserOnline(b.id);
+      if (aOnline && !bOnline) return -1;
+      if (!aOnline && bOnline) return 1;
+
+      const aTime = a.lastMessageTime
+        ? new Date(a.lastMessageTime).getTime()
+        : 0;
+      const bTime = b.lastMessageTime
+        ? new Date(b.lastMessageTime).getTime()
+        : 0;
+      return bTime - aTime;
+    });
+  }, [users]);
 
   if (isUsersLoading) {
     return (
@@ -83,26 +109,15 @@ export default function MessagesSection() {
         <div className="flex items-center space-x-4">
           <h1 className="text-2xl font-[800] text-[#1E293B]">Messages</h1>
           <Badge className="bg-[#FFF1F2] text-[#F43F5E] border border-[#FFE4E6] rounded-full px-2 py-1 text-sm">
-            {/* {users.length}  */}
-            {/* here must be the number of messages are unread for the user */}0
+            {/* {users.reduce((count, user) => count + (user.unreadCount || 0), 0)} */}
           </Badge>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="icon" className="cursor-pointer">
-            <Image
-              src={Plus || "/placeholder.svg"}
-              width={24}
-              height={24}
-              alt="plus"
-            />
+            <Image src={Plus} width={24} height={24} alt="plus" />
           </Button>
           <Button variant="ghost" size="icon" className="cursor-pointer">
-            <Image
-              src={Filter || "/placeholder.svg"}
-              width={24}
-              height={24}
-              alt="filter"
-            />
+            <Image src={Filter} width={24} height={24} alt="filter" />
           </Button>
         </div>
       </div>
@@ -111,7 +126,7 @@ export default function MessagesSection() {
       <div className="px-6 py-4 bg-[#EEF2FF] border-b border-[#CBD5E1]">
         <div className="relative">
           <Image
-            src={Search || "/placeholder.svg"}
+            src={Search}
             width={20}
             height={20}
             alt="search"
@@ -127,8 +142,11 @@ export default function MessagesSection() {
 
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto hide-scrollbar">
-        {users.map((user: any) => {
+        {sortedUsers.map((user) => {
           const isSelected = selectedUser?.id === user.id;
+          const isOnline = isUserOnline(user.id);
+          const unreadCount = 0;
+          const isTyping = typingStatus[user.id] || false;
 
           return (
             <div
@@ -140,8 +158,8 @@ export default function MessagesSection() {
               }`}
               onClick={() => setSelectedUser(user)}
             >
-              {/* Avatar */}
-              <div className="relative mr-3">
+              {/* Avatar with Online Status */}
+              <div className="relative mr-2">
                 <Image
                   src={user?.avatar || "/images/avatar.png"}
                   alt={user.name}
@@ -149,12 +167,11 @@ export default function MessagesSection() {
                   height={48}
                   className="rounded-full"
                 />
-                {/* Online Status Indicator */}
-                {onlineUsers.includes(user.id) ? (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#22C55E] border-2 border-white rounded-full"></div>
-                ) : (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-[#CBD5E1] border-2 border-white rounded-full"></div>
-                )}
+                <div
+                  className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
+                    isOnline ? "bg-[#22C55E]" : "bg-[#CBD5E1]"
+                  }`}
+                />
               </div>
 
               {/* Content */}
@@ -173,51 +190,40 @@ export default function MessagesSection() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    {false ? (
+                    {isTyping ? (
                       <div className="flex items-center space-x-1">
-                        <div className="flex space-x-1">
-                          <div className="w-1 h-1 bg-[#24D059] rounded-full animate-bounce"></div>
-                          <div
-                            className="w-1 h-1 bg-[#24D059] rounded-full animate-bounce"
-                            style={{ animationDelay: "0.1s" }}
-                          ></div>
-                          <div
-                            className="w-1 h-1 bg-[#24D059] rounded-full animate-bounce"
-                            style={{ animationDelay: "0.2s" }}
-                          ></div>
-                        </div>
                         <span className="text-[#24D059] font-[400] text-xs ml-2">
                           typing...
                         </span>
                       </div>
                     ) : (
                       <p className="text-[#475569] text-sm font-[500] truncate">
-                        {user.lastMessage
-                          ? user.lastMessage
-                          : "No messages yet"}
+                        {user.lastMessage || "No messages yet"}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center space-x-2 ml-2">
-                    {user.lastMessage && user.lastMessage.read && (
+                    {user.lastMessage && (
                       <div className="text-[#22c55e]">
                         <Image
-                          src={SeenCheckmark || "/placeholder.svg"}
+                          src={SeenCheckmark}
                           width={16}
                           height={16}
                           alt="seen-checkmark"
                         />
                       </div>
                     )}
-                    {/* {unreadCount > 0 && (
+                    {unreadCount > 0 && (
                       <Badge
                         className={`${
-                          userIsOnline ? "bg-[#4F46E5] text-white" : "bg-[#E2E8F0] text-[#475569]"
+                          isOnline
+                            ? "bg-[#4F46E5]"
+                            : "bg-[#E2E8F0] text-[#475569]"
                         } rounded-full min-w-[20px] h-5 text-xs flex items-center justify-center`}
                       >
                         {unreadCount > 99 ? "99+" : unreadCount}
                       </Badge>
-                    )} */}
+                    )}
                   </div>
                 </div>
               </div>
