@@ -1,103 +1,91 @@
-// import { NextResponse } from "next/server";
-// import { prisma } from "@/lib/prisma";
-// import { getServerSession } from "next-auth/next";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// export async function GET(
-//   request: Request,
-//   { params }: { params: { id: string } }
-// ) {
-//   try {
-//     const session = await getServerSession(authOptions);
+interface GroupedReaction {
+  emoji: {
+    id: string | null;
+    native: string;
+    name: string | null;
+  };
+  count: number;
+  users: Array<{
+    id: number;
+    name: string | null;
+  }>;
+}
 
-//     if (!session?.user?.id) {
-//       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-//     }
+interface User {
+  id: number;
+  name: string | null;
+  email: string | null;
+  avatar: string | null;
+}
 
-//     const senderId = Number.parseInt(session.user.id);
+interface Message {
+  id: number;
+  text: string | null;
+  createdAt: Date;
+  senderId: number;
+  receiverId: number;
+  metadata: string | null;
+  sender: User;
+  receiver: User;
+  reactions: Array<{
+    id: number;
+    emojiId: string | null;
+    emojiNative: string;
+    emojiName: string | null;
+    userId: number;
+    user: {
+      id: number;
+      name: string | null;
+    };
+  }>;
+}
 
-//     if (isNaN(senderId)) {
-//       return NextResponse.json(
-//         { message: "Invalid sender ID" },
-//         { status: 400 }
-//       );
-//     }
+interface ProcessedMessage extends Omit<Message, "reactions"> {
+  reactions: GroupedReaction[];
+  replyToId?: number;
+  replyToMessage?: Message;
+  quote?: {
+    text: string;
+    avatar: string;
+    parts: string | null;
+  };
+}
 
-//     const recipientId = Number.parseInt(params.id);
-
-//     if (isNaN(recipientId)) {
-//       return NextResponse.json(
-//         { message: "Invalid recipient ID" },
-//         { status: 400 }
-//       );
-//     }
-
-//     const messages = await prisma.message.findMany({
-//       where: {
-//         OR: [
-//           { senderId: senderId, receiverId: recipientId },
-//           { senderId: recipientId, receiverId: senderId },
-//         ],
-//       },
-//       include: {
-//         sender: {
-//           select: {
-//             id: true,
-//             name: true,
-//             email: true,
-//           },
-//         },
-//         receiver: {
-//           select: {
-//             id: true,
-//             name: true,
-//             email: true,
-//           },
-//         },
-//       },
-//       orderBy: {
-//         createdAt: "asc",
-//       },
-//     });
-
-//     return NextResponse.json(messages);
-//   } catch (error) {
-//     console.error("Get messages error:", error);
-//     return NextResponse.json(
-//       { message: "Internal server error" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const senderId = Number.parseInt(session.user.id)
+    const senderId = Number.parseInt(session.user.id);
 
     if (isNaN(senderId)) {
-      return NextResponse.json({ message: "Invalid sender ID" }, { status: 400 })
+      return NextResponse.json(
+        { message: "Invalid sender ID" },
+        { status: 400 }
+      );
     }
 
-    const recipientId = Number.parseInt(params.id)
+    const recipientId = Number.parseInt(params.id);
 
     if (isNaN(recipientId)) {
-      return NextResponse.json({ message: "Invalid recipient ID" }, { status: 400 })
+      return NextResponse.json(
+        { message: "Invalid recipient ID" },
+        { status: 400 }
+      );
     }
 
-    // Get all messages between the two users
-    // Both regular messages and reply messages are stored in the Message table
-    const messages = await prisma.message.findMany({
+    const messages = (await prisma.message.findMany({
       where: {
         OR: [
           { senderId: senderId, receiverId: recipientId },
@@ -121,7 +109,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
             avatar: true,
           },
         },
-        // Include reactions (emoji only) for each message
         reactions: {
           include: {
             user: {
@@ -136,15 +123,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
       orderBy: {
         createdAt: "asc",
       },
-    })
+    })) as Message[];
 
-    // Process messages to add reply information
-    // For reply messages, we need to fetch the original message they're replying to
     const processedMessages = await Promise.all(
-      messages.map(async (message) => {
-        // Group reactions by emoji for easier display
-        const groupedReactions = message.reactions.reduce((acc, reaction) => {
-          const key = reaction.emojiNative
+      messages.map(async (message): Promise<ProcessedMessage> => {
+        const groupedReactions = message.reactions.reduce<
+          Record<string, GroupedReaction>
+        >((acc, reaction) => {
+          const key = reaction.emojiNative;
           if (!acc[key]) {
             acc[key] = {
               emoji: {
@@ -154,27 +140,23 @@ export async function GET(request: Request, { params }: { params: { id: string }
               },
               count: 0,
               users: [],
-            }
+            };
           }
-          acc[key].count++
+          acc[key].count++;
           acc[key].users.push({
             id: reaction.user.id,
             name: reaction.user.name,
-          })
-          return acc
-        }, {})
+          });
+          return acc;
+        }, {});
 
-        const formattedReactions = Object.values(groupedReactions)
+        const formattedReactions = Object.values(groupedReactions);
 
-        // Check if message has metadata with reply information
-        // Reply messages are regular messages with metadata pointing to the original message
         if (message.metadata) {
           try {
-            const metadata = JSON.parse(message.metadata as string)
-
+            const metadata = JSON.parse(message.metadata);
             if (metadata.replyToId) {
-              // Find the original message in the Message table
-              const originalMessage = await prisma.message.findUnique({
+              const originalMessage = (await prisma.message.findUnique({
                 where: { id: metadata.replyToId },
                 include: {
                   sender: {
@@ -186,7 +168,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
                     },
                   },
                 },
-              })
+              })) as Message | null;
 
               if (originalMessage) {
                 return {
@@ -199,24 +181,27 @@ export async function GET(request: Request, { params }: { params: { id: string }
                     avatar: originalMessage.sender.avatar || "/placeholder.svg",
                     parts: originalMessage.sender.name,
                   },
-                }
+                };
               }
             }
           } catch (e) {
-            console.error("Error parsing message metadata:", e)
+            console.error("Error parsing message metadata:", e);
           }
         }
 
         return {
           ...message,
           reactions: formattedReactions,
-        }
-      }),
-    )
+        };
+      })
+    );
 
-    return NextResponse.json(processedMessages)
+    return NextResponse.json(processedMessages);
   } catch (error) {
-    console.error("Get messages error:", error)
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    console.error("Get messages error:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

@@ -131,6 +131,7 @@ export const useAuthStore = create((set, get) => ({
       const onlineUsersMap = users.reduce((acc, user) => {
         acc[user.userId] = {
           isOnline: user.isOnline,
+          lastSeen: user.isOnline ? "online" : new Date().toISOString(),
         };
         return acc;
       }, {});
@@ -163,5 +164,15 @@ export const useAuthStore = create((set, get) => ({
 
   isUserTyping: (userId) => {
     return get().typingUsers[userId] || false;
+  },
+
+  isUserRecentlyOnline: (userId) => {
+    const user = get().onlineUsers[userId];
+    if (!user) return false;
+    if (user.isOnline) return true;
+
+    const lastSeen = new Date(user.lastSeen);
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return lastSeen > fiveMinutesAgo;
   },
 }));

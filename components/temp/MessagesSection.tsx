@@ -18,6 +18,8 @@ export default function MessagesSection() {
     setSelectedUser,
     isUsersLoading,
     typingStatus,
+    unreadCounts,
+    markMessagesAsRead,
   } = useChatStore();
 
   const { isUserOnline } = useAuthStore();
@@ -46,6 +48,15 @@ export default function MessagesSection() {
       return bTime - aTime;
     });
   }, [users]);
+
+  const handleUserClick = async (user: any) => {
+    try {
+      await markMessagesAsRead(user.id);
+      setSelectedUser(user);
+    } catch (error) {
+      console.error("Failed to mark messages as read:", error);
+    }
+  };
 
   if (isUsersLoading) {
     return (
@@ -145,7 +156,7 @@ export default function MessagesSection() {
         {sortedUsers.map((user) => {
           const isSelected = selectedUser?.id === user.id;
           const isOnline = isUserOnline(user.id);
-          const unreadCount = 0;
+          const unreadCount = unreadCounts[user.id] || 0;
           const isTyping = typingStatus[user.id] || false;
 
           return (
@@ -156,7 +167,7 @@ export default function MessagesSection() {
                   ? "border-l-2 border-l-[#6e6af0] bg-[#f8fafc]"
                   : "bg-[#FFFFFF]"
               }`}
-              onClick={() => setSelectedUser(user)}
+              onClick={() => handleUserClick(user)}
             >
               {/* Avatar with Online Status */}
               <div className="relative mr-2">

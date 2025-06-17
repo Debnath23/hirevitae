@@ -81,6 +81,7 @@ function Messages() {
     isMessagesLoading,
     setReplyToMessage,
     isSubscribed,
+    markMessagesAsRead,
   } = useChatStore();
 
   const { authUser, socket } = useAuthStore();
@@ -93,13 +94,7 @@ function Messages() {
   const groupedMessages = groupMessagesByDate(messages);
 
   useEffect(() => {
-    console.log("🔄 Messages component effect triggered");
-    console.log("🔄 Selected User:", selectedUser?.id);
-    console.log("🔄 Socket connected:", socket?.connected);
-    console.log("🔄 Is subscribed:", isSubscribed);
-
     if (!selectedUser) {
-      console.log("🔄 No selected user, unsubscribing");
       unsubscribeFromMessages();
       return;
     }
@@ -108,11 +103,9 @@ function Messages() {
 
     const setup = async () => {
       try {
-        console.log("🔄 Fetching messages for user:", selectedUser.id);
         await getMessages(selectedUser.id);
 
         if (isMounted) {
-          console.log("🔄 Setting up subscription");
           subscribeToMessages();
         }
       } catch (error) {
@@ -123,7 +116,6 @@ function Messages() {
     setup();
 
     return () => {
-      console.log("🔄 Cleanup: unmounting");
       isMounted = false;
       unsubscribeFromMessages();
     };
@@ -135,7 +127,12 @@ function Messages() {
     }
   }, [messages]);
 
-  // Close menus when clicking outside
+  useEffect(() => {
+    if (selectedUser && authUser) {
+      markMessagesAsRead(selectedUser.id);
+    }
+  }, [selectedUser?.id]);
+
   useEffect(() => {
     const handleClickOutside = () => {
       setShowReactionMenu(false);
@@ -151,7 +148,6 @@ function Messages() {
 
   const handleAddReaction = async (messageId: string, emoji: EmojiReaction) => {
     try {
-      console.log("🎭 UI: Adding reaction to message:", messageId, emoji);
       setShowReactionMenu(false);
       setActiveMessageId(null);
     } catch (error) {
@@ -163,7 +159,6 @@ function Messages() {
     setReplyToMessage(message);
     setShowActionMenu(false);
     setActiveMessageId(null);
-    // Focus the message input
     const messageInput = document.querySelector(".DraftEditor-root");
     if (messageInput) {
       (messageInput as HTMLElement).focus();

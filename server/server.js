@@ -51,6 +51,7 @@ io.on("connection", (socket) => {
     Object.entries(userSocketMap).map(([id, data]) => ({
       userId: id,
       isOnline: data.isOnline,
+      lastSeen: data.lastSeen,
     }))
   );
 
@@ -89,17 +90,29 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("messageRead", ({ messageId, senderId }) => {
+  socket.on("markMessagesRead", async ({ senderId, receiverId }) => {
     try {
+      console.log(`Messages from ${senderId} to ${receiverId} marked as read`);
+
+      // Notify both parties about the read status
       const senderSocketId = getReceiverSocketId(senderId);
+      const receiverSocketId = getReceiverSocketId(receiverId);
+
       if (senderSocketId) {
-        io.to(senderSocketId).emit("messageReadUpdate", {
-          messageId,
-          read: true,
+        io.to(senderSocketId).emit("messagesRead", {
+          receiverId,
+          readAt: new Date().toISOString(),
+        });
+      }
+
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("messagesRead", {
+          senderId,
+          readAt: new Date().toISOString(),
         });
       }
     } catch (error) {
-      console.error("💥 Error handling messageRead:", error);
+      console.error("Error marking messages as read:", error);
     }
   });
 

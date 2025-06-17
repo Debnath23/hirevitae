@@ -75,7 +75,8 @@ model Message {
   codeLanguage  String?  @db.VarChar(50)
   codeContent   String?  @db.Text
 
-  seen          Int      @default(0) @db.Int // 0=not seen, 1=seen
+  read        Boolean  @default(false)
+  readAt      DateTime?
   senderId      Int
   receiverId    Int
 
@@ -93,7 +94,6 @@ model Message {
   @@index([senderId])
   @@index([receiverId])
   @@index([createdAt])
-  @@index([seen])
   @@map("message")
 }
 

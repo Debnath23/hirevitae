@@ -72,8 +72,8 @@ interface ChatStore {
   isMessageSending: boolean;
   isSubscribed: boolean;
   typingStatus: Record<string, boolean>;
+  unreadCounts: Record<string, number>;
 
-  // Actions
   getUsers: () => Promise<void>;
   getMessages: (userId: string) => Promise<void>;
   addMessage: (message: any) => void;
@@ -85,13 +85,14 @@ interface ChatStore {
   subscribeToMessages: () => void;
   unsubscribeFromMessages: () => void;
 
-  // Reply functionality
   setReplyToMessage: (message: Message | null) => void;
   clearReplyToMessage: () => void;
 
   setTypingStatus: (userId: string, isTyping: boolean) => void;
+  incrementUnreadCount: (userId: string) => void;
+  resetUnreadCount: (userId: string) => void;
+  markMessagesAsRead: (userId: string) => Promise<void>;
 
-  // Formatting actions
   toggleBold: () => void;
   toggleItalic: () => void;
   toggleUnderline: () => void;
@@ -118,6 +119,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   isMessageSending: false,
   isSubscribed: false,
   typingStatus: {},
+  unreadCounts: {},
 
   formatting: {
     bold: false,
@@ -158,19 +160,40 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   addMessage: (message: Message) => {
-    set((state) => ({
-      messages: [...state.messages, message],
-    }));
+    const { selectedUser } = get();
+    const authUser = require("@/store/useAuthStore").useAuthStore.getState()
+      .authUser;
+    const isIncoming = message.senderId !== authUser?.id;
+
+    set((state) => {
+      // If this is an incoming message and not for the currently selected user,
+      // increment the unread count
+      if (isIncoming && message.senderId !== state.selectedUser?.id) {
+        return {
+          messages: [...state.messages, message],
+          unreadCounts: {
+            ...state.unreadCounts,
+            [message.senderId]: (state.unreadCounts[message.senderId] || 0) + 1,
+          },
+        };
+      }
+
+      // Otherwise just add the message
+      return {
+        messages: [...state.messages, message],
+      };
+    });
   },
 
   subscribeToMessages: () => {
     const { socket } = require("@/store/useAuthStore").useAuthStore.getState();
     const { selectedUser, isSubscribed } = get();
+    const authUser = require("@/store/useAuthStore").useAuthStore.getState()
+      .authUser;
 
     const hasSelectedUser = !!selectedUser;
     const hasSocket = !!socket;
-    const hasAuthUser =
-      !!require("@/store/useAuthStore").useAuthStore.getState().authUser;
+    const hasAuthUser = !!authUser;
     const socketConnected = socket?.connected;
 
     if (
@@ -193,6 +216,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         get().setTypingStatus(senderId, isTyping);
       }
     );
+
+    socket.on("messagesRead", ({ receiverId }: { receiverId: string }) => {
+      if (receiverId === authUser.id) {
+        get().resetUnreadCount(receiverId);
+      }
+    });
 
     set({ isSubscribed: true });
     console.log("✅ Message subscription set up successfully");
@@ -273,7 +302,55 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }));
   },
 
-  setSelectedUser: (user: User) => {
+  incrementUnreadCount: (userId: string) => {
+    set((state) => ({
+      unreadCounts: {
+        ...state.unreadCounts,
+        [userId]: (state.unreadCounts[userId] || 0) + 1,
+      },
+    }));
+  },
+
+  resetUnreadCount: (userId: string) => {
+    set((state) => {
+      const newUnreadCounts = { ...state.unreadCounts };
+      delete newUnreadCounts[userId];
+      return { unreadCounts: newUnreadCounts };
+    });
+  },
+
+  markMessagesAsRead: async (userId: string) => {
+    try {
+      const authUser = require("@/store/useAuthStore").useAuthStore.getState()
+        .authUser;
+      if (!authUser) return;
+
+      await api.post(`/messages/mark-read/${userId}`);
+
+      get().resetUnreadCount(userId);
+
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg.senderId === userId && !msg.read
+            ? { ...msg, read: true, readAt: new Date().toISOString() }
+            : msg
+        ),
+      }));
+
+      const { socket } =
+        require("@/store/useAuthStore").useAuthStore.getState();
+      if (socket?.connected) {
+        socket.emit("markMessagesRead", {
+          senderId: userId,
+          receiverId: authUser.id,
+        });
+      }
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
+  },
+
+  setSelectedUser: async (user: User) => {
     const currentUser = get().selectedUser;
 
     // If switching users, unsubscribe from current and subscribe to new
@@ -281,8 +358,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       get().unsubscribeFromMessages();
       set({ selectedUser: user, messages: [] });
 
+      // Mark messages as read for the newly selected user
+      await get().markMessagesAsRead(user.id);
+      get().resetUnreadCount(user.id);
+
       // Small delay to ensure clean state transition
       setTimeout(() => {
+        get().getMessages(user.id);
         get().subscribeToMessages();
       }, 100);
     }
