@@ -18,6 +18,20 @@ interface FormattingState {
   codeContent: string;
 }
 
+interface Reaction {
+  id: string;
+  messageId: string;
+  emojiId: string;
+  emojiNative: string;
+  emojiName: string;
+  userId: string;
+  user?: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+}
+
 interface Message {
   id: string;
   senderId: string;
@@ -25,11 +39,11 @@ interface Message {
   content: string;
   text?: string;
   formatting?: FormattingState;
-  reactions?: any[];
   createdAt: string;
   image?: string;
   read?: boolean;
   seen?: number;
+  reactions?: Reaction[];
   isReacting?: boolean;
   sender?: {
     id: string | number;
@@ -76,7 +90,8 @@ interface ChatStore {
 
   getUsers: () => Promise<void>;
   getMessages: (userId: string) => Promise<void>;
-  addMessage: (message: any) => void;
+  addMessage: (message: Message) => void;
+  addReaction: (reaction: Reaction) => void;
   sendFormattedMessage: (
     content: string,
     replyToMessage?: Message | null
@@ -160,14 +175,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   addMessage: (message: Message) => {
-    const { selectedUser } = get();
     const authUser = require("@/store/useAuthStore").useAuthStore.getState()
       .authUser;
     const isIncoming = message.senderId !== authUser?.id;
 
     set((state) => {
-      // If this is an incoming message and not for the currently selected user,
-      // increment the unread count
       if (isIncoming && message.senderId !== state.selectedUser?.id) {
         return {
           messages: [...state.messages, message],
@@ -178,9 +190,48 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         };
       }
 
-      // Otherwise just add the message
       return {
         messages: [...state.messages, message],
+      };
+    });
+  },
+
+  addReaction: (reaction: Reaction) => {
+    set((state) => {
+      // Find the message that this reaction belongs to
+      const messageIndex = state.messages.findIndex(
+        (msg) => msg.id === reaction.messageId
+      );
+
+      if (messageIndex === -1) {
+        return state; // Message not found, no changes
+      }
+
+      const updatedMessages = [...state.messages];
+      const messageToUpdate = { ...updatedMessages[messageIndex] };
+
+      // Initialize reactions array if it doesn't exist
+      if (!messageToUpdate.reactions) {
+        messageToUpdate.reactions = [];
+      }
+
+      // Check if this user already reacted with this emoji
+      const existingReactionIndex = messageToUpdate.reactions.findIndex(
+        (r) => r.userId === reaction.userId && r.emojiId === reaction.emojiId
+      );
+
+      if (existingReactionIndex !== -1) {
+        // Update existing reaction
+        messageToUpdate.reactions[existingReactionIndex] = reaction;
+      } else {
+        // Add new reaction
+        messageToUpdate.reactions.push(reaction);
+      }
+
+      updatedMessages[messageIndex] = messageToUpdate;
+
+      return {
+        messages: updatedMessages,
       };
     });
   },
@@ -207,15 +258,27 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }
 
     socket.on("newMessage", (message: Message) => {
-      get().addMessage(message);
+      const authUser = require("@/store/useAuthStore").useAuthStore.getState()
+        .authUser;
+
+      if (
+        message.receiverId === authUser.id ||
+        message.senderId === authUser.id
+      ) {
+        const { selectedUser } = get();
+
+        if (
+          selectedUser?.id === message.senderId ||
+          selectedUser?.id === message.receiverId
+        ) {
+          get().addMessage(message);
+        }
+      }
     });
 
-    socket.on(
-      "userTyping",
-      ({ senderId, isTyping }: { senderId: string; isTyping: boolean }) => {
-        get().setTypingStatus(senderId, isTyping);
-      }
-    );
+    socket.on("reaction", (reaction: any) => {
+      get().addReaction(reaction);
+    });
 
     socket.on("messagesRead", ({ receiverId }: { receiverId: string }) => {
       if (receiverId === authUser.id) {
@@ -224,7 +287,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     });
 
     set({ isSubscribed: true });
-    console.log("✅ Message subscription set up successfully");
   },
 
   unsubscribeFromMessages: () => {
@@ -273,13 +335,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         payload
       );
       const newMessage = response.data;
+      console.log("newMessage", newMessage);
+
       const { socket } =
         require("@/store/useAuthStore").useAuthStore.getState();
 
       if (socket && socket.connected) {
         socket.emit("newMessage", {
           ...newMessage,
-          receiverId: selectedUser.id,
+          senderId: newMessage.senderId,
         });
       }
     } catch (error) {
@@ -291,6 +355,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   setTypingStatus: (userId, isTyping) => {
+    const { socket } = require("@/store/useAuthStore").useAuthStore.getState();
+
     set((state) => ({
       typingStatus: {
         ...state.typingStatus,
@@ -300,6 +366,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         user.id === userId ? { ...user, isTyping } : user
       ),
     }));
+
+    if (socket?.connected) {
+      socket.emit("typing", {
+        receiverId: userId,
+        isTyping,
+      });
+    }
   },
 
   incrementUnreadCount: (userId: string) => {
@@ -383,7 +456,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   toggleBold: () => {
     const { formatting } = get();
     set({
-      formatting: { ...formatting, bold: !formatting.bold },
+      formatting: { ...formatting, bold: true },
     });
   },
 

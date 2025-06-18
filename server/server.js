@@ -74,19 +74,31 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("typing", ({ receiverId, isTyping }) => {
+  socket.on("reaction", (reaction, receiverId) => {
     try {
-      const senderId = String(socket.handshake.query.userId);
+      const senderSocketId = String(socket.handshake.query.userId);
       const receiverSocketId = getReceiverSocketId(receiverId);
 
       if (receiverSocketId) {
-        io.to(receiverSocketId).emit("userTyping", {
-          senderId,
-          isTyping,
-        });
+        io.to(receiverSocketId).emit("reaction", reaction);
+      }
+
+      if (senderSocketId && senderSocketId !== receiverSocketId) {
+        io.to(senderSocketId).emit("reaction", reaction);
       }
     } catch (error) {
-      console.error("💥 Error handling typing:", error);
+      console.error("💥 Error handling reaction:", error);
+    }
+  });
+
+  socket.on("userTyping", ({ receiverId, isTyping, senderId }) => {
+    const receiverSocketId = getReceiverSocketId(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("userTyping", {
+        senderId,
+        isTyping,
+      });
     }
   });
 

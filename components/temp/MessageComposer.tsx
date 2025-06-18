@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { EditorState, RichUtils, Modifier } from "draft-js";
+import { EditorState, RichUtils, Modifier, DraftHandleValue } from "draft-js";
 import { Editor } from "draft-js";
 import { Button } from "@/components/ui/button";
 import {
@@ -183,6 +183,7 @@ export default function MessageComposer() {
     replyToMessage,
     clearReplyToMessage,
     isMessageSending,
+    resetFormatting,
   } = useChatStore();
 
   const handleToggleInlineStyle = (style: string) => {
@@ -248,6 +249,7 @@ export default function MessageComposer() {
       await sendFormattedMessage(content, replyToMessage);
       setEditorState(EditorState.createEmpty());
       clearReplyToMessage();
+      resetFormatting();
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -269,12 +271,14 @@ export default function MessageComposer() {
     if (isCurrentlyTyping !== isTyping) {
       setIsTyping(isCurrentlyTyping);
 
-      const { socket } =
+      const { socket, authUser } =
         require("@/store/useAuthStore").useAuthStore.getState();
+
       if (socket && socket.connected) {
-        socket.emit("typing", {
+        socket.emit("userTyping", {
           receiverId: selectedUser.id,
           isTyping: isCurrentlyTyping,
+          senderId: authUser.id,
         });
       }
     }
@@ -286,14 +290,21 @@ export default function MessageComposer() {
     if (isCurrentlyTyping) {
       typingTimeoutRef.current = setTimeout(() => {
         handleTyping(false);
-      }, 2000);
+      }, 1000);
     }
   };
 
   const handleEditorChange = (state: EditorState) => {
-    const content = state.getCurrentContent().getPlainText();
-    handleTyping(content.length > 0);
     setEditorState(state);
+  };
+
+  const handleBeforeInput = (
+    chars: string,
+    editorState: EditorState,
+    eventTimeStamp: number
+  ): DraftHandleValue => {
+    handleTyping(true);
+    return "not-handled";
   };
 
   useEffect(() => {
@@ -301,6 +312,7 @@ export default function MessageComposer() {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
+
       handleTyping(false);
     };
   }, [selectedUser]);
@@ -359,6 +371,7 @@ export default function MessageComposer() {
           <Editor
             editorState={editorState}
             onChange={handleEditorChange}
+            handleBeforeInput={handleBeforeInput}
             placeholder={
               replyToMessage ? "Write a reply..." : "Type a message..."
             }

@@ -13,7 +13,7 @@ export const useAuthStore = create((set, get) => ({
   isUpdatingProfile: false,
   isCheckingAuth: false,
   onlineUsers: {},
-  typingUsers: {},
+  allTypingUsers: {},
   socket: null,
 
   checkAuth: async () => {
@@ -131,11 +131,22 @@ export const useAuthStore = create((set, get) => ({
       const onlineUsersMap = users.reduce((acc, user) => {
         acc[user.userId] = {
           isOnline: user.isOnline,
+          isTyping: user.isTyping || false,
           lastSeen: user.isOnline ? "online" : new Date().toISOString(),
         };
         return acc;
       }, {});
       set({ onlineUsers: onlineUsersMap });
+    });
+
+    newSocket.on("userTyping", ({ senderId, isTyping }) => {
+      const allTypingUsers = get().allTypingUsers;
+      set({
+        allTypingUsers: {
+          ...allTypingUsers,
+          [senderId]: isTyping,
+        },
+      });
     });
 
     set({ socket: newSocket });
@@ -153,19 +164,6 @@ export const useAuthStore = create((set, get) => ({
     return get().onlineUsers[userId]?.isOnline || false;
   },
 
-  setUserTyping: (userId, isTyping) => {
-    set((state) => ({
-      typingUsers: {
-        ...state.typingUsers,
-        [userId]: isTyping,
-      },
-    }));
-  },
-
-  isUserTyping: (userId) => {
-    return get().typingUsers[userId] || false;
-  },
-
   isUserRecentlyOnline: (userId) => {
     const user = get().onlineUsers[userId];
     if (!user) return false;
@@ -174,5 +172,13 @@ export const useAuthStore = create((set, get) => ({
     const lastSeen = new Date(user.lastSeen);
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     return lastSeen > fiveMinutesAgo;
+  },
+
+  isUserTyping: (userId) => {
+    return (
+      get().allTypingUsers[userId] ||
+      get().onlineUsers[userId]?.isTyping ||
+      false
+    );
   },
 }));

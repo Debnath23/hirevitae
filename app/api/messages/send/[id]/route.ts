@@ -60,19 +60,19 @@ export async function POST(
       metadata?: string;
     } = {
       text: body.content,
-      bold: body.formatting?.bold || false,
-      italic: body.formatting?.italic || false,
-      underline: body.formatting?.underline || false,
-      unorderedList: body.formatting?.unorderedList || false,
-      orderedList: body.formatting?.orderedList || false,
-      fontSize: body.formatting?.fontSize || "14",
-      linkTitle: body.formatting?.linkTitle || null,
-      linkTarget: body.formatting?.linkTarget || null,
-      emoji: body.formatting?.emoji || null,
-      imageName: body.formatting?.imageName || null,
-      imageUrl: body.formatting?.imageUrl || null,
-      codeLanguage: body.formatting?.codeLanguage || null,
-      codeContent: body.formatting?.codeContent || null,
+      bold: body?.bold || false,
+      italic: body?.italic || false,
+      underline: body?.underline || false,
+      unorderedList: body?.unorderedList || false,
+      orderedList: body?.orderedList || false,
+      fontSize: body?.fontSize || "14",
+      linkTitle: body?.linkTitle || null,
+      linkTarget: body?.linkTarget || null,
+      emoji: body?.emoji || null,
+      imageName: body?.imageName || null,
+      imageUrl: body?.imageUrl || null,
+      codeLanguage: body?.codeLanguage || null,
+      codeContent: body?.codeContent || null,
       receiverId,
       senderId,
     };
@@ -138,11 +138,9 @@ export async function POST(
       }
     }
 
-    // Get both socket IDs
     const receiverSocketId = getReceiverSocketId(String(receiverId));
     const senderSocketId = getReceiverSocketId(String(senderId));
 
-    // Emit to both parties if they're connected
     if (receiverSocketId || senderSocketId) {
       io.to(receiverSocketId)
         .to(senderSocketId)

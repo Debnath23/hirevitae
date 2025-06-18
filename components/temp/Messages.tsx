@@ -26,6 +26,7 @@ import {
   DialogTrigger,
 } from "../ui/dialog";
 import { Label } from "../ui/label";
+import { api } from "@/lib/axios";
 
 interface EmojiReaction {
   id: string;
@@ -146,8 +147,17 @@ function Messages() {
     };
   }, []);
 
-  const handleAddReaction = async (messageId: string, emoji: EmojiReaction) => {
+ const handleAddReaction = async (messageId: string, emoji: EmojiReaction) => {
     try {
+      const response = await api.post(`/messages/reaction/${selectedUser?.id}`, {
+        messageId,
+        emoji: {
+          id: emoji.id,
+          native: emoji.emoji,
+          name: emoji.name,
+        },
+      });
+
       setShowReactionMenu(false);
       setActiveMessageId(null);
     } catch (error) {
@@ -353,12 +363,6 @@ function Messages() {
 
   return (
     <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-4 space-y-6">
-      {/* Debug info */}
-      <div className="text-xs text-gray-400 p-2 bg-gray-50 rounded">
-        Socket: {socket?.connected ? "✅ Connected" : "❌ Disconnected"} |
-        Subscribed: {isSubscribed ? "✅ Yes" : "❌ No"} | Messages:{" "}
-        {messages.length}
-      </div>
 
       {groupedMessages.map((item: any, index: number) => {
         if (item?.date) {
@@ -487,7 +491,7 @@ function Messages() {
                 </p>
 
                 {/* Attachments */}
-                {(message.linkTitle || message.imageName) && (
+                {/* {(message.linkTitle || message.imageName) && ( */}
                   <div className="flex flex-wrap gap-2 mb-3">
                     {message.linkTitle && message.linkTarget && (
                       <Button
@@ -602,7 +606,7 @@ function Messages() {
                       </DialogContent>
                     </Dialog>
                   </div>
-                )}
+               
 
                 {/* Reactions */}
                 {message.reactions && message.reactions.length > 0 && (

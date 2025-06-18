@@ -17,12 +17,11 @@ export default function MessagesSection() {
     selectedUser,
     setSelectedUser,
     isUsersLoading,
-    typingStatus,
     unreadCounts,
     markMessagesAsRead,
   } = useChatStore();
 
-  const { isUserOnline } = useAuthStore();
+  const { isUserOnline, allTypingUsers } = useAuthStore();
 
   useEffect(() => {
     getUsers();
@@ -36,9 +35,18 @@ export default function MessagesSection() {
     return [...(users as ChatUser[])].sort((a, b) => {
       const aOnline = isUserOnline(a.id);
       const bOnline = isUserOnline(b.id);
+      const aTyping = allTypingUsers[a.id] || false;
+      const bTyping = allTypingUsers[b.id] || false;
+
+      // Typing users come first
+      if (aTyping && !bTyping) return -1;
+      if (!aTyping && bTyping) return 1;
+
+      // Then online users
       if (aOnline && !bOnline) return -1;
       if (!aOnline && bOnline) return 1;
 
+      // Then by last message time
       const aTime = a.lastMessageTime
         ? new Date(a.lastMessageTime).getTime()
         : 0;
@@ -47,7 +55,7 @@ export default function MessagesSection() {
         : 0;
       return bTime - aTime;
     });
-  }, [users]);
+  }, [users, isUserOnline, allTypingUsers]);
 
   const handleUserClick = async (user: any) => {
     try {
@@ -157,7 +165,7 @@ export default function MessagesSection() {
           const isSelected = selectedUser?.id === user.id;
           const isOnline = isUserOnline(user.id);
           const unreadCount = unreadCounts[user.id] || 0;
-          const isTyping = typingStatus[user.id] || false;
+          const isTyping = allTypingUsers[user.id] || false;
 
           return (
             <div
