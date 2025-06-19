@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int       @id @default(autoincrement())
+  logo             String?
+  banner           String?
+  name             String
+  email            String    @unique
+  password         String
+  user_type        Int?      @default(0) // 0=candidate, 1=employer
+  phone            String?
+  website          String?
+  founded_date     DateTime? @db.Date
+  gender           Int?      // 0=male, 1=female, etc.
+  qualification    Int?      // 0=certificate, 1=associate degree, etc.
+  experience       Int?      // 0=fresh, [number] years
+  languages        String?   // Stored as JSON
+  salary_type      Int?      // 0=hourly, 1=daily, etc.
+  salary           Int?
+  job_title        String?
+  company_size     Int?
+  categories       String?   // Stored as JSON
+  intro            String?
+  profile_id       String?   @unique
+  about            String?
+  vision           String?
+  skill_occupation String?
+  portfolio_images String?   // Stored as JSON
+  social_networks  String?   // Stored as JSON
+  address          String?
+  city             String?
+  latitude         String?
+  longitude        String?
+  career_status    Int       @default(1) // 1=actively searching, etc.
+  show_profile     Int       @default(0) // 0=show, 1=hide
+  socket_ids       String?   // Stored as JSON
+  online           Int       @default(0) // 0=offline, 1=online
+  avatar           String?   // User avatar URL
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User can send and receive messages (both regular and reply messages)
+  sentMessages     Message[]  @relation("MessageSender")
+  receivedMessages Message[]  @relation("MessageReceiver")
+  
+  // User can add emoji reactions to messages
+  reactions        Reaction[]
+
+  @@map("user")
+}
+
+model Message {
+  id            Int      @id @default(autoincrement())
+  text          String?  @db.Text
+  metadata      String?  @db.Text // JSON: { replyToId, replyToSenderId, replyToContent }
+  bold          Boolean  @default(false)
+  italic        Boolean  @default(false)
+  underline     Boolean  @default(false)
+  unorderedList Boolean  @default(false)
+  orderedList   Boolean  @default(false)
+  fontSize      String   @default("14") @db.VarChar(10)
+  linkTitle     String?  @db.Text
+  linkTarget    String?  @db.Text
+  emoji         String?  @db.VarChar(10)
+  imageName     String?  @db.Text
+  imageUrl      String?  @db.Text
+  codeLanguage  String?  @db.VarChar(50)
+  codeContent   String?  @db.Text
+
+  read        Boolean  @default(false)
+  readAt      DateTime?
+  senderId      Int
+  receiverId    Int
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  sender        User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver      User     @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  // A message can have multiple emoji reactions
+  reactions     Reaction[]
+
+  // Indexes
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+  @@map("message")
+}
+
+model Reaction {
+  id          Int      @id @default(autoincrement())
+  messageId   Int
+  userId      Int
+  emojiId     String
+  emojiNative String 
+  emojiName   String
+  count       Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([userId])
+  @@unique([messageId, userId, emojiId])
+  @@map("reaction")
+}
