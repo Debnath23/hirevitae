@@ -131,7 +131,7 @@ export async function POST(
           replyToMessage: originalMessage,
           quote: {
             text: originalMessage.text || "",
-            avatar: originalMessage.sender.avatar || "/placeholder.svg",
+            avatar: originalMessage.sender.avatar || null,
             parts: originalMessage.sender.name,
           },
         };
@@ -149,7 +149,6 @@ export async function POST(
 
     return NextResponse.json(responseMessage, { status: 201 });
   } catch (error) {
-    console.error("Send message error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

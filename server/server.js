@@ -39,13 +39,11 @@ io.on("connection", (socket) => {
     return;
   }
 
-  // Set user online
   userSocketMap[userId] = {
     socketId: socket.id,
     isOnline: true,
   };
 
-  // Emit updated online user list
   io.emit(
     "getOnlineUsers",
     Object.entries(userSocketMap).map(([id, data]) => ({
@@ -55,7 +53,6 @@ io.on("connection", (socket) => {
     }))
   );
 
-  // New message handler
   socket.on("newMessage", (message) => {
     try {
       const receiverSocketId = getReceiverSocketId(String(message.receiverId));
@@ -75,35 +72,23 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Reaction handler
-  socket.on("reaction", (reaction, receiverId) => {
+  socket.on("addReaction", (reaction, receiverId) => {
     try {
-      console.log("reaction", reaction);
-      console.log("receiverId", receiverId);
-
-      const senderSocketId = String(socket.handshake.query.userId);
+      const senderSocketId = socket.id;
       const receiverSocketId = getReceiverSocketId(receiverId);
-
-      console.log("senderSocketId", senderSocketId);
-      console.log("receiverSocketId", receiverSocketId);
-      
 
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("reaction", reaction);
-        console.log("Triggered");
-        
       }
 
       if (senderSocketId && senderSocketId !== receiverSocketId) {
         io.to(senderSocketId).emit("reaction", reaction);
-        console.log("Triggered 2");
       }
     } catch (error) {
       console.error("💥 Error handling reaction:", error);
     }
   });
 
-  // Typing indicator
   socket.on("userTyping", ({ receiverId, isTyping, senderId }) => {
     const receiverSocketId = getReceiverSocketId(receiverId);
 
@@ -115,18 +100,10 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Mark messages as read
   socket.on("markMessagesRead", async ({ senderId, receiverId }) => {
     try {
-
-      console.log("senderId", senderId);
-      console.log("receiverId", receiverId);
-
       const senderSocketId = getReceiverSocketId(senderId);
       const receiverSocketId = getReceiverSocketId(receiverId);
-
-      console.log("senderSocketId", senderSocketId);
-      console.log("receiverSocketId", receiverSocketId);
 
       const payload = {
         readAt: new Date().toISOString(),
@@ -150,7 +127,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Optional: Client manually disconnects
   socket.on("setOffline", () => {
     const userData = userSocketMap[userId];
     if (userData) {
@@ -171,7 +147,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Socket disconnect handler
   socket.on("disconnect", () => {
     const userData = userSocketMap[userId];
 
@@ -193,17 +168,8 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Log socket errors
   socket.on("error", (error) => {
     console.error(`💥 Socket error for user ${userId}:`, error);
-  });
-});
-
-
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "healthy",
-    onlineUsers: Object.keys(userSocketMap).length,
   });
 });
 
@@ -213,9 +179,7 @@ server.listen(PORT, () => {
 });
 
 process.on("SIGTERM", () => {
-  console.log("SIGTERM received. Shutting down gracefully...");
   server.close(() => {
-    console.log("Server closed");
     process.exit(0);
   });
 });

@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { fullName, email, password } = signupSchema.parse(body);
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -26,10 +25,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         name: fullName,
@@ -38,7 +35,6 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Return user without password
     const { password: _, ...userWithoutPassword } = user;
 
     return NextResponse.json({
@@ -46,7 +42,6 @@ export async function POST(request: NextRequest) {
       user: userWithoutPassword,
     });
   } catch (error) {
-    console.error("Signup error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

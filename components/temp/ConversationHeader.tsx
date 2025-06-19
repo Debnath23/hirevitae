@@ -20,7 +20,7 @@ function ConversationHeader() {
   const { isUserOnline } = useAuthStore();
   const [showProfileDialog, setShowProfileDialog] = useState(false);
 
-  const online = isUserOnline(selectedUser?.id)
+  const online = isUserOnline(selectedUser?.id);
 
   if (!selectedUser) {
     return (
@@ -49,9 +49,7 @@ function ConversationHeader() {
             {/* Online Status Indicator */}
             <div
               className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
-                online
-                  ? "bg-[#22C55E]"
-                  : "bg-[#CBD5E1]"
+                online ? "bg-[#22C55E]" : "bg-[#CBD5E1]"
               }`}
             ></div>
           </div>
@@ -70,9 +68,7 @@ function ConversationHeader() {
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full mr-1 ${
-                    online
-                      ? "bg-[#22C55E]"
-                      : "bg-[#CBD5E1]"
+                    online ? "bg-[#22C55E]" : "bg-[#CBD5E1]"
                   }`}
                 ></span>
                 {online ? "Online" : "Offline"}
@@ -159,9 +155,7 @@ function ConversationHeader() {
                   />
                   <div
                     className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${
-                      online
-                        ? "bg-[#22C55E]"
-                        : "bg-[#CBD5E1]"
+                      online ? "bg-[#22C55E]" : "bg-[#CBD5E1]"
                     }`}
                   ></div>
                 </div>
@@ -186,15 +180,9 @@ function ConversationHeader() {
                   <div className="flex justify-between">
                     <span className="text-[#64748B]">Status:</span>
                     <span
-                      className={
-                        online
-                          ? "text-[#22C55E]"
-                          : "text-[#64748B]"
-                      }
+                      className={online ? "text-[#22C55E]" : "text-[#64748B]"}
                     >
-                      {online
-                        ? "Online"
-                        : "Offline"}
+                      {online ? "Online" : "Offline"}
                     </span>
                   </div>
                   {selectedUser?.id && (

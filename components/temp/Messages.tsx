@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useChatStore } from "@/store/useChatStore";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Reply, Trash2 } from "lucide-react";
+import { Reply } from "lucide-react";
 import {
   DeviceMobileCamera,
   Emoji1,
@@ -27,6 +27,7 @@ import {
 } from "../ui/dialog";
 import { Label } from "../ui/label";
 import { api } from "@/lib/axios";
+import { toast } from "sonner";
 
 interface EmojiReaction {
   id: string;
@@ -73,11 +74,7 @@ function groupMessagesByDate(messages: any[]) {
 }
 
 function Messages() {
-  const {
-    selectedUser,
-    isMessagesLoading,
-    setReplyToMessage,
-  } = useChatStore();
+  const { selectedUser, isMessagesLoading, setReplyToMessage } = useChatStore();
 
   const messages = useChatStore((state) => state.messages);
 
@@ -123,17 +120,12 @@ function Messages() {
         }
       );
 
-      console.log("Reaction res: ", response.data);
-      console.log("Id", selectedUser?.id);
-
-      
-
-      socket.emit("reaction", response.data, selectedUser?.id);
+      socket.emit("addReaction", response.data, selectedUser?.id);
 
       setShowReactionMenu(false);
       setActiveMessageId(null);
     } catch (error) {
-      console.error("🎭💥 UI: Failed to add reaction:", error);
+      toast.error("🎭💥 Failed to add reaction!");
     }
   };
 
@@ -150,13 +142,6 @@ function Messages() {
   const parseMessageText = (text: string) => {
     let cleanText = text;
     return cleanText;
-  };
-
-  const toggleReactionMenu = (e: React.MouseEvent, messageId: number) => {
-    e.stopPropagation();
-    setActiveMessageId(messageId);
-    setShowReactionMenu(true);
-    setShowActionMenu(false);
   };
 
   const toggleActionMenu = (e: React.MouseEvent, messageId: number) => {
@@ -594,27 +579,27 @@ function Messages() {
                         </span>
                         <span>
                           {(reaction.emoji?.name === "heart" ||
-                            reaction.name === "heart") && (
+                            reaction.emojiName === "heart") && (
                             <Image
-                              src={Emoji1 || "/placeholder.svg"}
+                              src={Emoji1}
                               width={16}
                               height={16}
                               alt="heart"
                             />
                           )}
                           {(reaction.emoji?.name === "thumbsUp" ||
-                            reaction.name === "thumbsUp") && (
+                            reaction.emojiName === "thumbsUp") && (
                             <Image
-                              src={Emoji2 || "/placeholder.svg"}
+                              src={Emoji2}
                               width={16}
                               height={16}
                               alt="thumbsUp"
                             />
                           )}
                           {(reaction.emoji?.name === "smile" ||
-                            reaction.name === "smile") && (
+                            reaction.emojiName === "smile") && (
                             <Image
-                              src={Emoji3 || "/placeholder.svg"}
+                              src={Emoji3}
                               width={16}
                               height={16}
                               alt="smile"
@@ -669,10 +654,6 @@ function Messages() {
                   >
                     <Reply className="w-4 h-4" />
                     <span>Reply</span>
-                  </button>
-                  <button className="flex items-center space-x-2 px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left text-sm cursor-pointer">
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete</span>
                   </button>
                 </div>
               )}

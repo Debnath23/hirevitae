@@ -22,7 +22,7 @@ export default function MessagesSection() {
     unreadMessages,
   } = useChatStore();
 
-  const { isUserOnline, allTypingUsers } = useAuthStore();
+  const { authUser, isUserOnline, allTypingUsers } = useAuthStore();
 
   useEffect(() => {
     getUsers();
@@ -30,6 +30,9 @@ export default function MessagesSection() {
 
   type ChatUser = (typeof users)[number] & {
     lastMessageTime?: string | null;
+    lastMessage?: string;
+    lastMessageSenderId?: string;
+    lastMessageSeen?: string;
   };
 
   const sortedUsers = useMemo(() => {
@@ -59,12 +62,8 @@ export default function MessagesSection() {
   }, [users, isUserOnline, allTypingUsers]);
 
   const handleUserClick = async (user: any) => {
-    try {
-      await markMessagesAsRead(user.id);
-      setSelectedUser(user);
-    } catch (error) {
-      console.error("Failed to mark messages as read:", error);
-    }
+    await markMessagesAsRead(user.id);
+    setSelectedUser(user);
   };
 
   if (isUsersLoading) {
@@ -167,10 +166,6 @@ export default function MessagesSection() {
           const isOnline = isUserOnline(user.id);
           const isTyping = allTypingUsers[user.id] || false;
           const unreadCount = unreadCounts[user.id] || 0;
-          const unreadInfo = unreadMessages[user.id];
-
-          const lastMessage = unreadInfo?.message ?? user.lastMessage;
-          const lastMessageTime = unreadInfo?.time ?? user.lastMessageTime;
 
           return (
             <div
@@ -207,13 +202,11 @@ export default function MessagesSection() {
                     </h3>
                   </div>
                   <span className="text-xs text-[#5F5F5F] ml-2 font-[400]">
-                    {unreadCounts[user.id] > 0 && unreadMessages[user.id]?.time
-                      ? formatMessageTime(unreadMessages[user.id]?.time)
+                    {unreadCount > 0 && unreadMessages[user.id]?.time
+                      ? formatMessageTime(unreadMessages[user.id].time)
                       : user.lastMessageTime
                       ? formatMessageTime(user.lastMessageTime)
                       : ""}
-
-                    {/* {lastMessageTime ? formatMessageTime(lastMessageTime) : ""} */}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -226,24 +219,26 @@ export default function MessagesSection() {
                       </div>
                     ) : (
                       <p className="text-[#475569] text-sm font-[500] truncate">
-                        {(unreadCounts[user.id] > 0 &&
-                          unreadMessages[user.id]?.message) ||
-                          user.lastMessage ||
-                          "No messages yet"}
+                        {unreadCount > 0
+                          ? unreadMessages[user.id]?.message ?? "New message"
+                          : user.lastMessage ?? "No messages yet"}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center space-x-2 ml-2">
-                    {user.lastMessage && (
-                      <div className="text-[#22c55e]">
-                        <Image
-                          src={SeenCheckmark}
-                          width={16}
-                          height={16}
-                          alt="seen-checkmark"
-                        />
-                      </div>
-                    )}
+                    {user.lastMessage &&
+                      user.lastMessageSenderId === authUser?.id &&
+                      user.lastMessageSeen && (
+                        <div className="text-[#22c55e]">
+                          <Image
+                            src={SeenCheckmark}
+                            width={16}
+                            height={16}
+                            alt="seen-checkmark"
+                          />
+                        </div>
+                      )}
+
                     {unreadCount > 0 && (
                       <Badge
                         className={`${

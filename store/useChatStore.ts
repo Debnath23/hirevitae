@@ -42,6 +42,7 @@ export interface Message {
   createdAt: string;
   image?: string;
   read?: boolean;
+  readAt?: string;
   seen?: number;
   reactions?: Reaction[];
   isReacting?: boolean;
@@ -194,20 +195,42 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         messages: [...state.messages, message],
       };
 
+      const senderId = message.senderId;
+      const receiverId = message.receiverId;
+      const otherUserId = isIncoming ? senderId : receiverId;
+
+      const lastMessageText = message.text ?? message.content ?? "";
+      const lastMessageTime = message.createdAt;
+
+      updatedState.users = state.users.map((user) =>
+        user.id === otherUserId
+          ? {
+              ...user,
+              lastMessage: lastMessageText,
+              lastMessageTime,
+              lastMessageSenderId: senderId,
+              // lastMessageSeen:
+              //   message.senderId === authUser?.id && !!message.readAt,
+              lastMessageSeen:
+                message.senderId === authUser?.id ? !!message.readAt : true,
+            }
+          : user
+      );
+
       if (
         isIncoming &&
-        (!state.selectedUser || message.senderId !== state.selectedUser.id)
+        (!state.selectedUser || senderId !== state.selectedUser.id)
       ) {
         updatedState.unreadCounts = {
           ...state.unreadCounts,
-          [message.senderId]: (state.unreadCounts[message.senderId] || 0) + 1,
+          [senderId]: (state.unreadCounts[senderId] || 0) + 1,
         };
 
         updatedState.unreadMessages = {
           ...state.unreadMessages,
-          [message.senderId]: {
-            message: message.text ?? message.content ?? "",
-            time: message.createdAt,
+          [senderId]: {
+            message: lastMessageText,
+            time: lastMessageTime,
           },
         };
       }
@@ -217,7 +240,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   addReaction: (reaction: Reaction) => {
-    console.log("📦 Updating reaction in store", reaction);
     set((state) => {
       const updatedMessages = state.messages.map((msg) => {
         if (msg.id !== reaction.messageId) return msg;
@@ -232,8 +254,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         } else {
           updatedReactions.push(reaction);
         }
-
-        console.log("💡 Updated reactions:", updatedReactions);
 
         return {
           ...msg,
@@ -282,17 +302,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             message.receiverId === selectedUser.id);
 
         if (isCurrentChat) {
-          // Message is part of the currently selected chat
-          get().addMessage(message); // Will NOT increment unread count
+          get().addMessage(message);
         } else {
-          // Either no one is selected, or this message is from another user
-          get().addMessage(message); // Will increment unread count
+          get().addMessage(message);
         }
       }
     });
 
     socket.on("reaction", (reaction: any) => {
-      console.log("✅ Reaction received:", reaction);
       get().addReaction(reaction);
     });
 
@@ -358,7 +375,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         payload
       );
       const newMessage = response.data;
-      console.log("newMessage", newMessage);
 
       const { socket } =
         require("@/store/useAuthStore").useAuthStore.getState();
@@ -370,7 +386,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         });
       }
     } catch (error) {
-      console.error("Error sending formatted message:", error);
       toast.error("Failed to sent message!");
     } finally {
       set({ isMessageSending: false });
@@ -399,8 +414,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   incrementUnreadCount: (userId: string) => {
-    console.log("cout++");
-
     set((state) => ({
       unreadCounts: {
         ...state.unreadCounts,
@@ -427,23 +440,34 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       get().resetUnreadCount(userId);
 
-      set((state) => ({
-        messages: state.messages.map((msg) =>
+      set((state) => {
+        const now = new Date().toISOString();
+
+        const updatedMessages = state.messages.map((msg) =>
           msg.senderId === userId && !msg.read
-            ? { ...msg, read: true, readAt: new Date().toISOString() }
+            ? { ...msg, read: true, readAt: now }
             : msg
-        ),
-      }));
+        );
+
+        const updatedUsers = state.users.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                lastMessageSeen: true,
+              }
+            : u
+        );
+
+        return {
+          messages: updatedMessages,
+          users: updatedUsers,
+        };
+      });
 
       const { socket } =
         require("@/store/useAuthStore").useAuthStore.getState();
 
-      console.log("senderId", userId);
-      console.log("receiverId", authUser.id);
-
       if (socket?.connected) {
-        console.log("markMessagesRead tiggerd");
-
         socket.emit("markMessagesRead", {
           senderId: userId,
           receiverId: authUser.id,

@@ -31,41 +31,64 @@ export async function GET(request: NextRequest) {
 
     const usersWithLastMessage = await Promise.all(
       users.map(async (user) => {
-        const lastMessage = await prisma.message.findFirst({
-          where: {
-            OR: [
-              {
-                senderId: currentUserId,
-                receiverId: user.id,
-              },
-              {
-                senderId: user.id,
-                receiverId: currentUserId,
-              },
-            ],
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-          select: {
-            text: true,
-            createdAt: true,
-            senderId: true,
-          },
-        });
+        const [lastMessage, unreadMessages] = await Promise.all([
+          prisma.message.findFirst({
+            where: {
+              OR: [
+                { senderId: currentUserId, receiverId: user.id },
+                { senderId: user.id, receiverId: currentUserId },
+              ],
+            },
+            orderBy: { createdAt: "desc" },
+            select: {
+              text: true,
+              createdAt: true,
+              senderId: true,
+              read: true,
+            },
+          }),
+          prisma.message.findMany({
+            where: {
+              senderId: user.id,
+              receiverId: currentUserId,
+              read: false,
+            },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              text: true,
+              createdAt: true,
+            },
+          }),
+        ]);
+
+        const hasUnread = unreadMessages.length > 0;
+        const lastUnread = hasUnread ? unreadMessages[0] : null;
 
         return {
           ...user,
-          lastMessage: lastMessage?.text,
-          lastMessageTime: lastMessage?.createdAt,
+          lastMessage: hasUnread ? lastUnread?.text : lastMessage?.text ?? null,
+          lastMessageTime: hasUnread
+            ? lastUnread?.createdAt
+            : lastMessage?.createdAt ?? null,
           lastMessageSenderId: lastMessage?.senderId,
+          lastMessageSeen:
+            lastMessage?.senderId === currentUserId ? lastMessage?.read : null,
+          unreadCount: hasUnread
+            ? await prisma.message.count({
+                where: {
+                  senderId: user.id,
+                  receiverId: currentUserId,
+                  read: false,
+                },
+              })
+            : 0,
         };
       })
     );
 
     return NextResponse.json(usersWithLastMessage);
   } catch (error) {
-    console.error("Get users error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

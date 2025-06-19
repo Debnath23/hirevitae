@@ -51,7 +51,7 @@ interface ProcessedMessage extends Omit<Message, "reactions"> {
   replyToMessage?: Message;
   quote?: {
     text: string;
-    avatar: string;
+    avatar: string | null;
     parts: string | null;
   };
 }
@@ -178,7 +178,7 @@ export async function GET(
                   replyToMessage: originalMessage,
                   quote: {
                     text: originalMessage.text || "",
-                    avatar: originalMessage.sender.avatar || "/placeholder.svg",
+                    avatar: originalMessage.sender.avatar || null,
                     parts: originalMessage.sender.name,
                   },
                 };
@@ -198,7 +198,6 @@ export async function GET(
 
     return NextResponse.json(processedMessages);
   } catch (error) {
-    console.error("Get messages error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

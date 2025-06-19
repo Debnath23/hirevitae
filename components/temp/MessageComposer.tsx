@@ -42,6 +42,7 @@ import {
 import { X } from "lucide-react";
 import "draft-js/dist/Draft.css";
 import formatMessageTime from "@/lib/format-message-time";
+import { toast } from "sonner";
 
 const EMOJI_LIST = [
   "😀",
@@ -236,12 +237,11 @@ export default function MessageComposer() {
     const content = editorState.getCurrentContent().getPlainText();
 
     if (!content.trim()) {
-      console.log("Cannot send empty message");
+      toast.error("Cannot send empty message!");
       return;
     }
 
     if (!selectedUser) {
-      console.error("No user selected");
       return;
     }
 
@@ -251,7 +251,7 @@ export default function MessageComposer() {
       clearReplyToMessage();
       resetFormatting();
     } catch (error) {
-      console.error("Error sending message:", error);
+      toast.error("Failed to send message!");
     }
   };
 

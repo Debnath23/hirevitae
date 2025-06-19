@@ -114,17 +114,12 @@ export async function POST(
     const receiverSocketId = getReceiverSocketId(String(receiverId));
     const senderSocketId = getReceiverSocketId(String(senderId));
 
-    console.log("senderSocketId", senderSocketId);
-      console.log("receiverSocketId", receiverSocketId);
-
     if (receiverSocketId || senderSocketId) {
-      console.log("📤 Emitting socket reaction");
       io.to(receiverSocketId).to(senderSocketId).emit("reaction", reaction);
     }
 
     return NextResponse.json(reaction, { status: 201 });
   } catch (error) {
-    console.error("Add reaction error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }
