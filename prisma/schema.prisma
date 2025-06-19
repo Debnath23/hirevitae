@@ -99,32 +99,20 @@ model Message {
 
 model Reaction {
   id          Int      @id @default(autoincrement())
-  
-  // Reference to the message (can be a regular message or a reply message)
   messageId   Int
-  
-  // User who added the reaction
   userId      Int
-  
-  // Emoji-only reaction data
-  emojiId     String   // Unique identifier for the emoji
-  emojiNative String   // The actual emoji character (e.g., "👍")
-  emojiName   String   // Name of the emoji (e.g., "thumbs_up")
-
+  emojiId     String
+  emojiNative String 
+  emojiName   String
   count       Int      @default(1)
-  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
   message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Indexes
   @@index([messageId])
   @@index([userId])
-  
-  // Ensure a user can only react once with the same emoji to a message
   @@unique([messageId, userId, emojiId])
   @@map("reaction")
 }

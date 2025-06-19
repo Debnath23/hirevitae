@@ -39,8 +39,9 @@ export default function Temp() {
   const { checkAuth } = useAuthStore();
 
   useEffect(() => {
-    checkAuth()
-  }, [])
+    checkAuth();
+  }, []);
+
   return (
     <div className="flex h-screen my-0 bg-[#f8fafc] w-[1440px] mx-auto">
       <style jsx global>{`
@@ -71,16 +72,17 @@ export default function Temp() {
               onClick={
                 isLogout
                   ? () =>
-                    signOut({
-                      callbackUrl: "/",
-                      redirect: true,
-                    })
+                      signOut({
+                        callbackUrl: "/",
+                        redirect: true,
+                      })
                   : undefined
               }
-              className={`w-full rounded-none h-10 cursor-pointer ${item.isActive
+              className={`w-full rounded-none h-10 cursor-pointer ${
+                item.isActive
                   ? "bg-[#F2F2F9] border-l-4 border-[#0961F5]"
                   : "hover:bg-[#f2f2f9]"
-                }`}
+              }`}
             >
               <Image
                 src={item.icon}

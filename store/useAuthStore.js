@@ -127,6 +127,19 @@ export const useAuthStore = create((set, get) => ({
       }
     });
 
+    newSocket.on("newMessage", (message) => {
+      const { addMessage } =
+        require("@/store/useChatStore").useChatStore.getState();
+      const { authUser } = get();
+
+      if (
+        message.receiverId === authUser.id ||
+        message.senderId === authUser.id
+      ) {
+        addMessage(message);
+      }
+    });
+
     newSocket.on("getOnlineUsers", (users) => {
       const onlineUsersMap = users.reduce((acc, user) => {
         acc[user.userId] = {

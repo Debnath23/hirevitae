@@ -204,7 +204,7 @@ export function LoginForm({
 
       if (response?.ok) {
         setSuccess(true);
-        router.push("/messages");
+        router.push("/temp");
       } else {
         setError(response?.error || "Invalid email or password.");
       }

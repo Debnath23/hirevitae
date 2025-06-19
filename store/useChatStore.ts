@@ -32,7 +32,7 @@ interface Reaction {
   };
 }
 
-interface Message {
+export interface Message {
   id: string;
   senderId: string;
   receiverId: string;
@@ -87,6 +87,13 @@ interface ChatStore {
   isSubscribed: boolean;
   typingStatus: Record<string, boolean>;
   unreadCounts: Record<string, number>;
+  isSocketInitialized: boolean;
+  unreadMessages: {
+    [userId: string]: {
+      message: string;
+      time: string;
+    };
+  };
 
   getUsers: () => Promise<void>;
   getMessages: (userId: string) => Promise<void>;
@@ -105,6 +112,7 @@ interface ChatStore {
 
   setTypingStatus: (userId: string, isTyping: boolean) => void;
   incrementUnreadCount: (userId: string) => void;
+  setUnreadCount: (userId: string, count: number) => void;
   resetUnreadCount: (userId: string) => void;
   markMessagesAsRead: (userId: string) => Promise<void>;
 
@@ -134,7 +142,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   isMessageSending: false,
   isSubscribed: false,
   typingStatus: {},
-  unreadCounts: {},
+  unreadCounts: {} as Record<string, number>,
+  isSocketInitialized: false,
+  unreadMessages: {} as Record<string, { message: string; time: string }>,
 
   formatting: {
     bold: false,
@@ -177,62 +187,61 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   addMessage: (message: Message) => {
     const authUser = require("@/store/useAuthStore").useAuthStore.getState()
       .authUser;
-    const isIncoming = message.senderId !== authUser?.id;
+    const isIncoming = message.receiverId === authUser?.id;
 
     set((state) => {
-      if (isIncoming && message.senderId !== state.selectedUser?.id) {
-        return {
-          messages: [...state.messages, message],
-          unreadCounts: {
-            ...state.unreadCounts,
-            [message.senderId]: (state.unreadCounts[message.senderId] || 0) + 1,
+      const updatedState: Partial<ChatStore> = {
+        messages: [...state.messages, message],
+      };
+
+      if (
+        isIncoming &&
+        (!state.selectedUser || message.senderId !== state.selectedUser.id)
+      ) {
+        updatedState.unreadCounts = {
+          ...state.unreadCounts,
+          [message.senderId]: (state.unreadCounts[message.senderId] || 0) + 1,
+        };
+
+        updatedState.unreadMessages = {
+          ...state.unreadMessages,
+          [message.senderId]: {
+            message: message.text ?? message.content ?? "",
+            time: message.createdAt,
           },
         };
       }
 
-      return {
-        messages: [...state.messages, message],
-      };
+      return updatedState as ChatStore;
     });
   },
 
   addReaction: (reaction: Reaction) => {
+    console.log("📦 Updating reaction in store", reaction);
     set((state) => {
-      // Find the message that this reaction belongs to
-      const messageIndex = state.messages.findIndex(
-        (msg) => msg.id === reaction.messageId
-      );
+      const updatedMessages = state.messages.map((msg) => {
+        if (msg.id !== reaction.messageId) return msg;
 
-      if (messageIndex === -1) {
-        return state; // Message not found, no changes
-      }
+        const updatedReactions = msg.reactions ? [...msg.reactions] : [];
+        const existingIndex = updatedReactions.findIndex(
+          (r) => r.userId === reaction.userId && r.emojiId === reaction.emojiId
+        );
 
-      const updatedMessages = [...state.messages];
-      const messageToUpdate = { ...updatedMessages[messageIndex] };
+        if (existingIndex !== -1) {
+          updatedReactions[existingIndex] = reaction;
+        } else {
+          updatedReactions.push(reaction);
+        }
 
-      // Initialize reactions array if it doesn't exist
-      if (!messageToUpdate.reactions) {
-        messageToUpdate.reactions = [];
-      }
+        console.log("💡 Updated reactions:", updatedReactions);
 
-      // Check if this user already reacted with this emoji
-      const existingReactionIndex = messageToUpdate.reactions.findIndex(
-        (r) => r.userId === reaction.userId && r.emojiId === reaction.emojiId
-      );
+        return {
+          ...msg,
+          reactions: updatedReactions,
+        };
+      });
 
-      if (existingReactionIndex !== -1) {
-        // Update existing reaction
-        messageToUpdate.reactions[existingReactionIndex] = reaction;
-      } else {
-        // Add new reaction
-        messageToUpdate.reactions.push(reaction);
-      }
-
-      updatedMessages[messageIndex] = messageToUpdate;
-
-      return {
-        messages: updatedMessages,
-      };
+      return { messages: updatedMessages };
     });
   },
 
@@ -267,26 +276,40 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       ) {
         const { selectedUser } = get();
 
-        if (
-          selectedUser?.id === message.senderId ||
-          selectedUser?.id === message.receiverId
-        ) {
-          get().addMessage(message);
+        const isCurrentChat =
+          selectedUser &&
+          (message.senderId === selectedUser.id ||
+            message.receiverId === selectedUser.id);
+
+        if (isCurrentChat) {
+          // Message is part of the currently selected chat
+          get().addMessage(message); // Will NOT increment unread count
+        } else {
+          // Either no one is selected, or this message is from another user
+          get().addMessage(message); // Will increment unread count
         }
       }
     });
 
     socket.on("reaction", (reaction: any) => {
+      console.log("✅ Reaction received:", reaction);
       get().addReaction(reaction);
     });
 
-    socket.on("messagesRead", ({ receiverId }: { receiverId: string }) => {
-      if (receiverId === authUser.id) {
-        get().resetUnreadCount(receiverId);
-      }
-    });
-
     set({ isSubscribed: true });
+  },
+
+  resetUnreadCount: (userId: string) => {
+    set((state) => {
+      const newUnreadCounts = { ...state.unreadCounts };
+      const newUnreadMessages = { ...state.unreadMessages };
+      delete newUnreadCounts[userId];
+      delete newUnreadMessages[userId];
+      return {
+        unreadCounts: newUnreadCounts,
+        unreadMessages: newUnreadMessages,
+      };
+    });
   },
 
   unsubscribeFromMessages: () => {
@@ -376,6 +399,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   incrementUnreadCount: (userId: string) => {
+    console.log("cout++");
+
     set((state) => ({
       unreadCounts: {
         ...state.unreadCounts,
@@ -384,13 +409,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }));
   },
 
-  resetUnreadCount: (userId: string) => {
-    set((state) => {
-      const newUnreadCounts = { ...state.unreadCounts };
-      delete newUnreadCounts[userId];
-      return { unreadCounts: newUnreadCounts };
-    });
-  },
+  setUnreadCount: (userId, count) =>
+    set((state) => ({
+      unreadCounts: {
+        ...state.unreadCounts,
+        [userId]: count,
+      },
+    })),
 
   markMessagesAsRead: async (userId: string) => {
     try {
@@ -412,7 +437,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
       const { socket } =
         require("@/store/useAuthStore").useAuthStore.getState();
+
+      console.log("senderId", userId);
+      console.log("receiverId", authUser.id);
+
       if (socket?.connected) {
+        console.log("markMessagesRead tiggerd");
+
         socket.emit("markMessagesRead", {
           senderId: userId,
           receiverId: authUser.id,
@@ -424,25 +455,26 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   setSelectedUser: async (user: User) => {
-    const currentUser = get().selectedUser;
+    const {
+      selectedUser,
+      unsubscribeFromMessages,
+      markMessagesAsRead,
+      resetUnreadCount,
+      getMessages,
+      subscribeToMessages,
+    } = get();
 
-    // If switching users, unsubscribe from current and subscribe to new
-    if (currentUser?.id !== user.id) {
-      get().unsubscribeFromMessages();
-      set({ selectedUser: user, messages: [] });
+    if (selectedUser?.id === user.id) return;
 
-      // Mark messages as read for the newly selected user
-      await get().markMessagesAsRead(user.id);
-      get().resetUnreadCount(user.id);
+    unsubscribeFromMessages();
 
-      // Small delay to ensure clean state transition
-      setTimeout(() => {
-        get().getMessages(user.id);
-        get().subscribeToMessages();
-      }, 100);
-    }
+    set({ selectedUser: user, messages: [] });
 
-    console.log("Selected user changed to:", user);
+    await Promise.all([markMessagesAsRead(user.id), getMessages(user.id)]);
+
+    resetUnreadCount(user.id);
+
+    subscribeToMessages();
   },
 
   setReplyToMessage: (message: Message | null) => {

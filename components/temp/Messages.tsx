@@ -74,16 +74,12 @@ function groupMessagesByDate(messages: any[]) {
 
 function Messages() {
   const {
-    messages,
-    getMessages,
     selectedUser,
-    subscribeToMessages,
-    unsubscribeFromMessages,
     isMessagesLoading,
     setReplyToMessage,
-    isSubscribed,
-    markMessagesAsRead,
   } = useChatStore();
+
+  const messages = useChatStore((state) => state.messages);
 
   const { authUser, socket } = useAuthStore();
   const messageEndRef = useRef<HTMLDivElement>(null);
@@ -93,46 +89,6 @@ function Messages() {
   const [codeBlockDialogOpen, setCodeBlockDialogOpen] = useState(false);
 
   const groupedMessages = groupMessagesByDate(messages);
-
-  useEffect(() => {
-    if (!selectedUser) {
-      unsubscribeFromMessages();
-      return;
-    }
-
-    let isMounted = true;
-
-    const setup = async () => {
-      try {
-        await getMessages(selectedUser.id);
-
-        if (isMounted) {
-          subscribeToMessages();
-        }
-      } catch (error) {
-        console.error("🔄 Error setting up messages:", error);
-      }
-    };
-
-    setup();
-
-    return () => {
-      isMounted = false;
-      unsubscribeFromMessages();
-    };
-  }, [selectedUser?.id, socket?.connected]);
-
-  useEffect(() => {
-    if (messageEndRef.current && messages.length > 0) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
-
-  useEffect(() => {
-    if (selectedUser && authUser) {
-      markMessagesAsRead(selectedUser.id);
-    }
-  }, [selectedUser?.id]);
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -147,16 +103,32 @@ function Messages() {
     };
   }, []);
 
- const handleAddReaction = async (messageId: string, emoji: EmojiReaction) => {
+  useEffect(() => {
+    if (messageEndRef.current && messages.length > 0) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const handleAddReaction = async (messageId: string, emoji: EmojiReaction) => {
     try {
-      const response = await api.post(`/messages/reaction/${selectedUser?.id}`, {
-        messageId,
-        emoji: {
-          id: emoji.id,
-          native: emoji.emoji,
-          name: emoji.name,
-        },
-      });
+      const response = await api.post(
+        `/messages/reaction/${selectedUser?.id}`,
+        {
+          messageId,
+          emoji: {
+            id: emoji.id,
+            native: emoji.emoji,
+            name: emoji.name,
+          },
+        }
+      );
+
+      console.log("Reaction res: ", response.data);
+      console.log("Id", selectedUser?.id);
+
+      
+
+      socket.emit("reaction", response.data, selectedUser?.id);
 
       setShowReactionMenu(false);
       setActiveMessageId(null);
@@ -175,18 +147,8 @@ function Messages() {
     }
   };
 
-  const parseMessageText = (
-    text: string,
-    linkTitle: string | null,
-    imageUrl: string | null
-  ) => {
+  const parseMessageText = (text: string) => {
     let cleanText = text;
-    if (linkTitle && text && text.includes(linkTitle)) {
-      cleanText = cleanText.replace(linkTitle, "").trim();
-    }
-    if (imageUrl && text && text.includes("[Image:")) {
-      cleanText = cleanText.replace(/\[Image:.*?\]/g, "").trim();
-    }
     return cleanText;
   };
 
@@ -363,7 +325,6 @@ function Messages() {
 
   return (
     <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-4 space-y-6">
-
       {groupedMessages.map((item: any, index: number) => {
         if (item?.date) {
           return (
@@ -392,9 +353,7 @@ function Messages() {
 
         const senderName = message.sender?.name || "Unknown User";
         const cleanMessageText = parseMessageText(
-          message.text || message.content,
-          message.linkTitle,
-          message.imageUrl
+          message.text || message.content
         );
 
         return (
@@ -491,16 +450,20 @@ function Messages() {
                 </p>
 
                 {/* Attachments */}
-                {/* {(message.linkTitle || message.imageName) && ( */}
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {message.linkTitle && message.linkTarget && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {message.linkTitle && message.linkTarget && (
+                    <a
+                      href={message.linkTarget}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       <Button
                         variant="outline"
                         size="sm"
                         className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
                       >
                         <Image
-                          src={LinkSimple || "/placeholder.svg"}
+                          src={LinkSimple}
                           width={16}
                           height={16}
                           alt="icon"
@@ -510,34 +473,32 @@ function Messages() {
                           {message.linkTitle}
                         </p>
                       </Button>
-                    )}
+                    </a>
+                  )}
 
-                    {message.imageName && message.imageUrl && (
-                      <a
-                        href={message.imageUrl}
-                        target="_blank"
-                        rel="noreferrer"
+                  {message.imageName && message.imageUrl && (
+                    <a href={message.imageUrl} target="_blank" rel="noreferrer">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
                       >
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-[#6c7275] border-[#e2e8f0] hover:bg-[#f8fafc] cursor-pointer"
-                        >
-                          <Image
-                            src={FileImage || "/placeholder.svg"}
-                            width={16}
-                            height={16}
-                            alt="icon"
-                            className="mr-2"
-                          />
-                          <p className="text-[#475569] font-[700] text-sm">
-                            {message.imageName}
-                          </p>
-                        </Button>
-                      </a>
-                    )}
+                        <Image
+                          src={FileImage}
+                          width={16}
+                          height={16}
+                          alt="icon"
+                          className="mr-2"
+                        />
+                        <p className="text-[#475569] font-[700] text-sm">
+                          {message.imageName}
+                        </p>
+                      </Button>
+                    </a>
+                  )}
 
-                    {message.codeLanguage && message.codeContent && (
+                  {message.codeLanguage && message.codeContent && (
+                    <>
                       <Button
                         variant="outline"
                         size="sm"
@@ -545,7 +506,7 @@ function Messages() {
                         onClick={() => setCodeBlockDialogOpen(true)}
                       >
                         <Image
-                          src={DeviceMobileCamera || "/placeholder.svg"}
+                          src={DeviceMobileCamera}
                           width={16}
                           height={16}
                           alt="icon"
@@ -555,58 +516,58 @@ function Messages() {
                           {message.codeLanguage} Code
                         </p>
                       </Button>
-                    )}
 
-                    {/* Code Block Dialog */}
-                    <Dialog
-                      open={codeBlockDialogOpen}
-                      onOpenChange={setCodeBlockDialogOpen}
-                    >
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-[#6c7275] hover:bg-[#f8fafc] cursor-pointer"
-                        >
-                          <Image
-                            src={TablerCode || "/placeholder.svg"}
-                            width={20}
-                            height={20}
-                            alt="icon"
-                          />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[500px]">
-                        <DialogHeader>
-                          <DialogTitle>Code Block</DialogTitle>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="grid gap-2">
-                            <Label htmlFor="code-language">Language</Label>
-                            <p>{message.codeLanguage}</p>
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="code-content">Code</Label>
-                            <p
-                              id="code-content"
-                              className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                            >
-                              {message.codeContent}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex justify-end gap-2">
+                      {/* Code Block Dialog */}
+                      <Dialog
+                        open={codeBlockDialogOpen}
+                        onOpenChange={setCodeBlockDialogOpen}
+                      >
+                        <DialogTrigger asChild>
                           <Button
-                            variant="outline"
-                            onClick={() => setCodeBlockDialogOpen(false)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-[#6c7275] hover:bg-[#f8fafc] cursor-pointer"
                           >
-                            Ok
+                            <Image
+                              src={TablerCode || "/placeholder.svg"}
+                              width={20}
+                              height={20}
+                              alt="icon"
+                            />
                           </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-               
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[500px]">
+                          <DialogHeader>
+                            <DialogTitle>Code Block</DialogTitle>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                              <Label htmlFor="code-language">Language</Label>
+                              <p>{message.codeLanguage}</p>
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="code-content">Code</Label>
+                              <p
+                                id="code-content"
+                                className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                              >
+                                {message.codeContent}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => setCodeBlockDialogOpen(false)}
+                            >
+                              Ok
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </>
+                  )}
+                </div>
 
                 {/* Reactions */}
                 {message.reactions && message.reactions.length > 0 && (

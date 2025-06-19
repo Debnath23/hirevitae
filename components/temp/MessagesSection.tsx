@@ -19,6 +19,7 @@ export default function MessagesSection() {
     isUsersLoading,
     unreadCounts,
     markMessagesAsRead,
+    unreadMessages,
   } = useChatStore();
 
   const { isUserOnline, allTypingUsers } = useAuthStore();
@@ -128,7 +129,7 @@ export default function MessagesSection() {
         <div className="flex items-center space-x-4">
           <h1 className="text-2xl font-[800] text-[#1E293B]">Messages</h1>
           <Badge className="bg-[#FFF1F2] text-[#F43F5E] border border-[#FFE4E6] rounded-full px-2 py-1 text-sm">
-            {/* {users.reduce((count, user) => count + (user.unreadCount || 0), 0)} */}
+            {Object.values(unreadCounts).reduce((acc, count) => acc + count, 0)}
           </Badge>
         </div>
         <div className="flex items-center space-x-2">
@@ -164,8 +165,12 @@ export default function MessagesSection() {
         {sortedUsers.map((user) => {
           const isSelected = selectedUser?.id === user.id;
           const isOnline = isUserOnline(user.id);
-          const unreadCount = unreadCounts[user.id] || 0;
           const isTyping = allTypingUsers[user.id] || false;
+          const unreadCount = unreadCounts[user.id] || 0;
+          const unreadInfo = unreadMessages[user.id];
+
+          const lastMessage = unreadInfo?.message ?? user.lastMessage;
+          const lastMessageTime = unreadInfo?.time ?? user.lastMessageTime;
 
           return (
             <div
@@ -202,9 +207,13 @@ export default function MessagesSection() {
                     </h3>
                   </div>
                   <span className="text-xs text-[#5F5F5F] ml-2 font-[400]">
-                    {user.lastMessageTime
+                    {unreadCounts[user.id] > 0 && unreadMessages[user.id]?.time
+                      ? formatMessageTime(unreadMessages[user.id]?.time)
+                      : user.lastMessageTime
                       ? formatMessageTime(user.lastMessageTime)
                       : ""}
+
+                    {/* {lastMessageTime ? formatMessageTime(lastMessageTime) : ""} */}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -217,7 +226,10 @@ export default function MessagesSection() {
                       </div>
                     ) : (
                       <p className="text-[#475569] text-sm font-[500] truncate">
-                        {user.lastMessage || "No messages yet"}
+                        {(unreadCounts[user.id] > 0 &&
+                          unreadMessages[user.id]?.message) ||
+                          user.lastMessage ||
+                          "No messages yet"}
                       </p>
                     )}
                   </div>

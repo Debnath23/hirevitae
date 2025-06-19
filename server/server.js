@@ -39,13 +39,13 @@ io.on("connection", (socket) => {
     return;
   }
 
-  userSocketMap[userId] = socket.id;
-
+  // Set user online
   userSocketMap[userId] = {
     socketId: socket.id,
     isOnline: true,
   };
 
+  // Emit updated online user list
   io.emit(
     "getOnlineUsers",
     Object.entries(userSocketMap).map(([id, data]) => ({
@@ -55,6 +55,7 @@ io.on("connection", (socket) => {
     }))
   );
 
+  // New message handler
   socket.on("newMessage", (message) => {
     try {
       const receiverSocketId = getReceiverSocketId(String(message.receiverId));
@@ -74,23 +75,35 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Reaction handler
   socket.on("reaction", (reaction, receiverId) => {
     try {
+      console.log("reaction", reaction);
+      console.log("receiverId", receiverId);
+
       const senderSocketId = String(socket.handshake.query.userId);
       const receiverSocketId = getReceiverSocketId(receiverId);
 
+      console.log("senderSocketId", senderSocketId);
+      console.log("receiverSocketId", receiverSocketId);
+      
+
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("reaction", reaction);
+        console.log("Triggered");
+        
       }
 
       if (senderSocketId && senderSocketId !== receiverSocketId) {
         io.to(senderSocketId).emit("reaction", reaction);
+        console.log("Triggered 2");
       }
     } catch (error) {
       console.error("💥 Error handling reaction:", error);
     }
   });
 
+  // Typing indicator
   socket.on("userTyping", ({ receiverId, isTyping, senderId }) => {
     const receiverSocketId = getReceiverSocketId(receiverId);
 
@@ -102,25 +115,34 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Mark messages as read
   socket.on("markMessagesRead", async ({ senderId, receiverId }) => {
     try {
-      console.log(`Messages from ${senderId} to ${receiverId} marked as read`);
 
-      // Notify both parties about the read status
+      console.log("senderId", senderId);
+      console.log("receiverId", receiverId);
+
       const senderSocketId = getReceiverSocketId(senderId);
       const receiverSocketId = getReceiverSocketId(receiverId);
+
+      console.log("senderSocketId", senderSocketId);
+      console.log("receiverSocketId", receiverSocketId);
+
+      const payload = {
+        readAt: new Date().toISOString(),
+      };
 
       if (senderSocketId) {
         io.to(senderSocketId).emit("messagesRead", {
           receiverId,
-          readAt: new Date().toISOString(),
+          ...payload,
         });
       }
 
       if (receiverSocketId) {
         io.to(receiverSocketId).emit("messagesRead", {
           senderId,
-          readAt: new Date().toISOString(),
+          ...payload,
         });
       }
     } catch (error) {
@@ -128,26 +150,55 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", () => {
-    if (userSocketMap[userId] === socket.id) {
-      userSocketMap[userId].isOnline = false;
-
-      delete userSocketMap[userId];
+  // Optional: Client manually disconnects
+  socket.on("setOffline", () => {
+    const userData = userSocketMap[userId];
+    if (userData) {
+      userSocketMap[userId] = {
+        ...userData,
+        isOnline: false,
+        lastSeen: new Date().toISOString(),
+      };
 
       io.emit(
         "getOnlineUsers",
         Object.entries(userSocketMap).map(([id, data]) => ({
           userId: id,
           isOnline: data.isOnline,
+          lastSeen: data.lastSeen,
         }))
       );
     }
   });
 
+  // Socket disconnect handler
+  socket.on("disconnect", () => {
+    const userData = userSocketMap[userId];
+
+    if (userData && userData.socketId === socket.id) {
+      userSocketMap[userId] = {
+        ...userData,
+        isOnline: false,
+        lastSeen: new Date().toISOString(),
+      };
+
+      io.emit(
+        "getOnlineUsers",
+        Object.entries(userSocketMap).map(([id, data]) => ({
+          userId: id,
+          isOnline: data.isOnline,
+          lastSeen: data.lastSeen,
+        }))
+      );
+    }
+  });
+
+  // Log socket errors
   socket.on("error", (error) => {
     console.error(`💥 Socket error for user ${userId}:`, error);
   });
 });
+
 
 app.get("/health", (req, res) => {
   res.status(200).json({
