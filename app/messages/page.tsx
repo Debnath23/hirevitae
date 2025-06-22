@@ -15,10 +15,10 @@ import {
   Logout,
 } from "@/public/icons/index";
 import { signOut } from "next-auth/react";
-import MessagesSection from "@/components/temp/MessagesSection";
-import ConversationDetailSection from "@/components/temp/ConversationDetailSection";
-import NoConversationDetailSelectedContainer from "@/components/temp/NoConversationDetailSelectedContainer";
-import CandidateDetailsSection from "@/components/temp/CandidateDetailsSection";
+import MessagesSection from "@/components/messages/MessagesSection";
+import ConversationDetailSection from "@/components/messages/ConversationDetailSection";
+import NoConversationDetailSelectedContainer from "@/components/messages/NoConversationDetailSelectedContainer";
+import CandidateDetailsSection from "@/components/messages/CandidateDetailsSection";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useEffect } from "react";
 
@@ -34,7 +34,7 @@ const sidebarItems = [
   { icon: Logout, color: "#6c7275", isActive: false },
 ];
 
-export default function Temp() {
+export default function Messages() {
   const { selectedUser } = useChatStore();
   const { checkAuth } = useAuthStore();
 
