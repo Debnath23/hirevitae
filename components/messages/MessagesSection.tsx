@@ -2,7 +2,7 @@
 
 import { useChatStore } from "@/store/useChatStore";
 import Image from "next/image";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Plus, Filter, Search, SeenCheckmark } from "@/public/icons/index";
@@ -23,6 +23,7 @@ export default function MessagesSection() {
   } = useChatStore();
 
   const { authUser, isUserOnline, allTypingUsers } = useAuthStore();
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     getUsers();
@@ -60,6 +61,12 @@ export default function MessagesSection() {
       return bTime - aTime;
     });
   }, [users, isUserOnline, allTypingUsers]);
+
+  const filteredUsers = useMemo(() => {
+    return sortedUsers.filter((user) =>
+      user.name.toLowerCase().includes(searchQuery)
+    );
+  }, [sortedUsers, searchQuery]);
 
   const handleUserClick = async (user: any) => {
     await markMessagesAsRead(user.id);
@@ -154,6 +161,8 @@ export default function MessagesSection() {
           <Input
             type="text"
             placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value.toLowerCase())}
             className="pl-10 bg-[#FFFFFF] border border-[#CBD5E1] rounded-full h-12 text-[#475569] text-base font-[500]"
           />
         </div>
@@ -161,7 +170,7 @@ export default function MessagesSection() {
 
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto hide-scrollbar">
-        {sortedUsers.map((user) => {
+        {filteredUsers.map((user) => {
           const isSelected = selectedUser?.id === user.id;
           const isOnline = isUserOnline(user.id);
           const isTyping = allTypingUsers[user.id] || false;

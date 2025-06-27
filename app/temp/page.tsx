@@ -271,7 +271,7 @@ const activities = [
   },
 ];
 
-export default function CompleteDashboard() {
+export default function MessagesSectionDesign() {
   return (
     <div className="flex h-screen my-0 bg-[#f8fafc] w-[1440px] mx-auto">
       <style jsx global>{`
