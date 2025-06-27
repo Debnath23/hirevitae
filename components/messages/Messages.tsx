@@ -508,18 +508,18 @@ function Messages() {
                         onOpenChange={setCodeBlockDialogOpen}
                       >
                         <DialogTrigger asChild>
-                          <Button
+                          {/* <Button
                             variant="ghost"
                             size="sm"
                             className="text-[#6c7275] hover:bg-[#f8fafc] cursor-pointer"
                           >
                             <Image
-                              src={TablerCode || "/placeholder.svg"}
+                              src={TablerCode}
                               width={20}
                               height={20}
                               alt="icon"
                             />
-                          </Button>
+                          </Button> */}
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-[500px]">
                           <DialogHeader>
