@@ -15,7 +15,6 @@ import {
   Emoji3,
   FileImage,
   LinkSimple,
-  TablerCode,
 } from "@/public/icons";
 import formatMessageTime from "@/lib/format-message-time";
 import {
@@ -28,6 +27,20 @@ import {
 import { Label } from "../ui/label";
 import { api } from "@/lib/axios";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import { defaultSchema } from "hast-util-sanitize";
+
+const customSchema = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames || []), "u"],
+  attributes: {
+    ...defaultSchema.attributes,
+    span: [...(defaultSchema.attributes?.span || []), "style"],
+    u: [],
+  },
+};
 
 interface EmojiReaction {
   id: string;
@@ -341,6 +354,11 @@ function Messages() {
           message.text || message.content
         );
 
+        const messageText = cleanMessageText.replace(
+          /\+\+(.+?)\+\+/g,
+          "<u>$1</u>"
+        );
+
         return (
           <div key={messageKey}>
             <div
@@ -410,29 +428,24 @@ function Messages() {
                   </div>
                 )}
 
-                <p
-                  className="bg-[#F8FAFC] text-[#475569] font-[400] text-base mb-3 leading-relaxed rounded-[3px] p-3"
-                  style={{
-                    fontSize: `${message.fontSize}px`,
-                    fontWeight: message.bold ? "bold" : "normal",
-                    fontStyle: message.italic ? "italic" : "normal",
-                    textDecoration: message.underline ? "underline" : "none",
-                    listStyleType: message.unorderedList
-                      ? "disc"
-                      : message.orderedList
-                      ? "decimal"
-                      : "none",
-                    paddingLeft:
-                      message.unorderedList || message.orderedList
-                        ? "20px"
-                        : "12px",
-                  }}
-                >
-                  {cleanMessageText}
-                  {message.emoji && (
-                    <span className="ml-0">{message.emoji}</span>
-                  )}
-                </p>
+                <div className="bg-[#F8FAFC] text-[#475569] font-[400] text-base mb-3 leading-relaxed rounded-[3px] p-3">
+                  <ReactMarkdown
+                    components={{
+                      ul: ({ children }) => (
+                        <ul className="list-disc pl-5 mb-2">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="list-decimal pl-5 mb-2">{children}</ol>
+                      ),
+                      li: ({ children }) => (
+                        <li className="mb-1">{children}</li>
+                      ),
+                    }}
+                    rehypePlugins={[rehypeRaw, [rehypeSanitize, customSchema]]}
+                  >
+                    {messageText}
+                  </ReactMarkdown>
+                </div>
 
                 {/* Attachments */}
                 <div className="flex flex-wrap gap-2 mb-3">

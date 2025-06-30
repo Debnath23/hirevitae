@@ -41,7 +41,7 @@ export async function POST(
     }
 
     const messageData: {
-      text: string;
+      text: object;
       bold: boolean;
       italic: boolean;
       underline: boolean;
@@ -149,6 +149,7 @@ export async function POST(
 
     return NextResponse.json(responseMessage, { status: 201 });
   } catch (error) {
+    console.log("Error sending message:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

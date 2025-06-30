@@ -43,6 +43,8 @@ import { X } from "lucide-react";
 import "draft-js/dist/Draft.css";
 import formatMessageTime from "@/lib/format-message-time";
 import { toast } from "sonner";
+import { stateToHTML } from "draft-js-export-html";
+import TurndownService from "turndown";
 
 const EMOJI_LIST = [
   "😀",
@@ -156,6 +158,24 @@ const FONT_SIZE_OPTIONS = [
   { value: "72", label: "72px" },
 ];
 
+const FONT_SIZES: Record<string, { fontSize: string }> = {
+  FONTSIZE_8: { fontSize: "8px" },
+  FONTSIZE_9: { fontSize: "9px" },
+  FONTSIZE_10: { fontSize: "10px" },
+  FONTSIZE_11: { fontSize: "11px" },
+  FONTSIZE_12: { fontSize: "12px" },
+  FONTSIZE_14: { fontSize: "14px" },
+  FONTSIZE_16: { fontSize: "16px" },
+  FONTSIZE_18: { fontSize: "18px" },
+  FONTSIZE_20: { fontSize: "20px" },
+  FONTSIZE_24: { fontSize: "24px" },
+  FONTSIZE_28: { fontSize: "28px" },
+  FONTSIZE_32: { fontSize: "32px" },
+  FONTSIZE_36: { fontSize: "36px" },
+  FONTSIZE_48: { fontSize: "48px" },
+  FONTSIZE_72: { fontSize: "72px" },
+};
+
 export default function MessageComposer() {
   const [editorState, setEditorState] = useState(EditorState.createEmpty());
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -168,12 +188,6 @@ export default function MessageComposer() {
   const {
     selectedUser,
     formatting,
-    toggleBold,
-    toggleItalic,
-    toggleUnderline,
-    toggleUnorderedList,
-    toggleOrderedList,
-    setFontSize,
     setLinkTitle,
     setLinkTarget,
     setImageName,
@@ -192,24 +206,51 @@ export default function MessageComposer() {
 
     switch (style) {
       case "BOLD":
-        toggleBold();
+        formatting.bold = !formatting.bold;
         break;
       case "ITALIC":
-        toggleItalic();
+        formatting.italic = !formatting.italic;
         break;
       case "UNDERLINE":
-        toggleUnderline();
+        formatting.underline = !formatting.underline;
+        break;
+      default:
         break;
     }
   };
 
   const handleToggleBlockType = (blockType: string) => {
     setEditorState(RichUtils.toggleBlockType(editorState, blockType));
+  };
 
-    if (blockType === "unordered-list-item") {
-      toggleUnorderedList();
-    } else if (blockType === "ordered-list-item") {
-      toggleOrderedList();
+  const FONT_SIZE_KEYS = Object.keys(FONT_SIZES);
+
+  const applyFontSize = (size: string) => {
+    const styleKey = `FONTSIZE_${size}`;
+    const selection = editorState.getSelection();
+    let contentState = editorState.getCurrentContent();
+
+    FONT_SIZE_KEYS.forEach((key) => {
+      contentState = Modifier.removeInlineStyle(contentState, selection, key);
+    });
+
+    if (!selection.isCollapsed()) {
+      contentState = Modifier.applyInlineStyle(
+        contentState,
+        selection,
+        styleKey
+      );
+
+      const newEditorState = EditorState.push(
+        editorState,
+        contentState,
+        "change-inline-style"
+      );
+
+      setEditorState(EditorState.forceSelection(newEditorState, selection));
+    } else {
+      const newEditorState = RichUtils.toggleInlineStyle(editorState, styleKey);
+      setEditorState(newEditorState);
     }
   };
 
@@ -234,9 +275,36 @@ export default function MessageComposer() {
   };
 
   const handleSendMessage = async () => {
-    const content = editorState.getCurrentContent().getPlainText();
+    const content = editorState.getCurrentContent();
 
-    if (!content.trim()) {
+    const html = stateToHTML(editorState.getCurrentContent(), {
+      inlineStyles: {
+        ...Object.fromEntries(
+          Object.entries(FONT_SIZES).map(([key, val]) => [
+            key,
+            {
+              style: { fontSize: val.fontSize },
+            },
+          ])
+        ),
+      },
+    });
+
+    const turndown = new TurndownService({
+      headingStyle: "atx",
+      codeBlockStyle: "fenced",
+    });
+
+    turndown.addRule("underline", {
+      filter: "u",
+      replacement: (content) => `++${content}++`,
+    });
+
+    turndown.keep(["span"]);
+
+    const markdown = turndown.turndown(html);
+
+    if (!content.hasText()) {
       toast.error("Cannot send empty message!");
       return;
     }
@@ -246,7 +314,7 @@ export default function MessageComposer() {
     }
 
     try {
-      await sendFormattedMessage(content, replyToMessage);
+      await sendFormattedMessage(markdown, replyToMessage);
       setEditorState(EditorState.createEmpty());
       clearReplyToMessage();
       resetFormatting();
@@ -362,16 +430,12 @@ export default function MessageComposer() {
         )}
 
         {/* Input Area */}
-        <div
-          className="flex-1 p-3 rounded-md min-h-[100px] max-h-[200px] overflow-auto text-sm text-gray-700"
-          style={{
-            fontSize: `${formatting.fontSize}px`,
-          }}
-        >
+        <div className="flex-1 p-3 rounded-md min-h-[100px] max-h-[200px] overflow-auto text-sm text-gray-700">
           <Editor
             editorState={editorState}
             onChange={handleEditorChange}
             handleBeforeInput={handleBeforeInput}
+            customStyleMap={FONT_SIZES}
             placeholder={
               replyToMessage ? "Write a reply..." : "Type a message..."
             }
@@ -381,20 +445,16 @@ export default function MessageComposer() {
         {/* Bottom Toolbar */}
         <div className="flex items-center justify-between bg-[#FAFAFA] p-3">
           <div className="flex items-center">
-            <div>
+            <div className="flex items-center space-x-1 mr-2">
               <Button
                 variant="ghost"
+                size="sm"
                 className={`text-[#A0AEC0] hover:bg-[#f8fafc] cursor-pointer ${
                   formatting.bold ? "bg-[#e2e8f0]" : ""
                 }`}
                 onClick={() => handleToggleInlineStyle("BOLD")}
               >
-                <Image
-                  src={TablerBold || "/placeholder.svg"}
-                  width={20}
-                  height={20}
-                  alt="icon"
-                />
+                <Image src={TablerBold} width={20} height={20} alt="icon" />
               </Button>
               <Button
                 variant="ghost"
@@ -404,12 +464,7 @@ export default function MessageComposer() {
                 }`}
                 onClick={() => handleToggleInlineStyle("ITALIC")}
               >
-                <Image
-                  src={TablerItalic || "/placeholder.svg"}
-                  width={20}
-                  height={20}
-                  alt="icon"
-                />
+                <Image src={TablerItalic} width={20} height={20} alt="icon" />
               </Button>
               <Button
                 variant="ghost"
@@ -420,7 +475,7 @@ export default function MessageComposer() {
                 onClick={() => handleToggleInlineStyle("UNDERLINE")}
               >
                 <Image
-                  src={TablerUnderline || "/placeholder.svg"}
+                  src={TablerUnderline}
                   width={20}
                   height={20}
                   alt="icon"
@@ -439,12 +494,7 @@ export default function MessageComposer() {
                 }`}
                 onClick={() => handleToggleBlockType("unordered-list-item")}
               >
-                <Image
-                  src={TablerList || "/placeholder.svg"}
-                  width={20}
-                  height={20}
-                  alt="icon"
-                />
+                <Image src={TablerList} width={20} height={20} alt="icon" />
               </Button>
               <Button
                 variant="ghost"
@@ -455,7 +505,7 @@ export default function MessageComposer() {
                 onClick={() => handleToggleBlockType("ordered-list-item")}
               >
                 <Image
-                  src={TablerListNumbers || "/placeholder.svg"}
+                  src={TablerListNumbers}
                   width={20}
                   height={20}
                   alt="icon"
@@ -463,7 +513,12 @@ export default function MessageComposer() {
               </Button>
 
               {/* Font Size Selection */}
-              <Select value={formatting.fontSize} onValueChange={setFontSize}>
+              <Select
+                value={formatting.fontSize}
+                onValueChange={(value) => {
+                  applyFontSize(value);
+                }}
+              >
                 <SelectTrigger className="w-auto h-8 px-0.5 mr-0.5 border-0 bg-transparent hover:bg-[#f8fafc] text-[#6c7275] min-w-[60px] cursor-pointer">
                   <SelectValue />
                 </SelectTrigger>

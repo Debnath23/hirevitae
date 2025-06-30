@@ -59,7 +59,7 @@ model User {
 
 model Message {
   id            Int      @id @default(autoincrement())
-  text          String?  @db.Text
+  text          Json?
   metadata      String?  @db.Text // JSON: { replyToId, replyToSenderId, replyToContent }
   bold          Boolean  @default(false)
   italic        Boolean  @default(false)

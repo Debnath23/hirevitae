@@ -58,9 +58,10 @@ interface ProcessedMessage extends Omit<Message, "reactions"> {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
+    const { params } = await Promise.resolve(context);
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {

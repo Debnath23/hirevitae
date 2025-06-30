@@ -111,7 +111,7 @@ function ConversationHeader() {
             title="Inbox"
           >
             <Image
-              src={Inbox || "/placeholder.svg"}
+              src={Inbox}
               alt="inbox"
               width={16}
               height={16}
@@ -124,7 +124,7 @@ function ConversationHeader() {
             className="rounded-full transition-colors bg-[#883DCF] text-[#FFFFFF] hover:bg-[#7c3aed] cursor-pointer"
           >
             <Image
-              src={Call || "/placeholder.svg"}
+              src={Call}
               alt="call"
               width={19}
               height={19}
@@ -205,7 +205,7 @@ function ConversationHeader() {
             title="Search in conversation"
           >
             <Image
-              src={Search2 || "/placeholder.svg"}
+              src={Search2}
               width={20}
               height={20}
               alt="search"
@@ -220,7 +220,7 @@ function ConversationHeader() {
             title="More options"
           >
             <Image
-              src={MonotoneAdd || "/placeholder.svg"}
+              src={MonotoneAdd}
               width={20}
               height={20}
               alt="more options"
