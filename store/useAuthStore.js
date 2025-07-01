@@ -16,14 +16,20 @@ export const useAuthStore = create((set, get) => ({
   allTypingUsers: {},
   socket: null,
 
-  checkAuth: async () => {
+  checkAuth: async (router) => {
     set({ isCheckingAuth: true });
     try {
       const response = await api.get("/auth/me");
+
+      if (response.data.message === "Unauthorized") {
+        toast.error(response.data.message || "Authentication check failed.");
+        set({ authUser: null });
+        router.push("/login");
+        return;
+      }
       set({ authUser: response.data.user, isCheckingAuth: false });
       get().connectSocket();
     } catch (error) {
-      console.error("Error checking auth:", error);
       set({ authUser: null });
     } finally {
       set({ isCheckingAuth: false });

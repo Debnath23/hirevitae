@@ -13,6 +13,10 @@ export async function GET(request: NextRequest) {
 
     const currentUserId = Number.parseInt(session.user.id);
 
+    if (isNaN(currentUserId)) {
+      return NextResponse.json({ message: "Invalid user ID" }, { status: 400 });
+    }
+
     const users = await prisma.user.findMany({
       where: {
         id: { not: currentUserId },
@@ -28,6 +32,10 @@ export async function GET(request: NextRequest) {
         name: "asc",
       },
     });
+
+    if (!users || users.length === 0) {
+      return NextResponse.json([], { status: 200 });
+    }
 
     const usersWithLastMessage = await Promise.all(
       users.map(async (user) => {

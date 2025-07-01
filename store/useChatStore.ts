@@ -95,13 +95,14 @@ interface ChatStore {
       time: string;
     };
   };
+  isMarking: boolean;
 
   getUsers: () => Promise<void>;
   getMessages: (userId: string) => Promise<void>;
   addMessage: (message: Message) => void;
   addReaction: (reaction: Reaction) => void;
   sendFormattedMessage: (
-    content: string,
+    content: any,
     replyToMessage?: Message | null
   ) => Promise<void>;
   setSelectedUser: (user: User) => void;
@@ -116,13 +117,6 @@ interface ChatStore {
   setUnreadCount: (userId: string, count: number) => void;
   resetUnreadCount: (userId: string) => void;
   markMessagesAsRead: (userId: string) => Promise<void>;
-
-  toggleBold: () => void;
-  toggleItalic: () => void;
-  toggleUnderline: () => void;
-  toggleUnorderedList: () => void;
-  toggleOrderedList: () => void;
-  setFontSize: (fontSize: string) => void;
   setLinkTitle: (linkTitle: string) => void;
   setLinkTarget: (linkTarget: string) => void;
   setEmoji: (emoji: string) => void;
@@ -146,6 +140,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   unreadCounts: {} as Record<string, number>,
   isSocketInitialized: false,
   unreadMessages: {} as Record<string, { message: string; time: string }>,
+  isMarking: false,
 
   formatting: {
     bold: false,
@@ -167,9 +162,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     set({ isUsersLoading: true });
     try {
       const response = await api.get("/users");
+
+      if (response.data.length === 0) {
+        set({ users: [], isUsersLoading: false });
+        return;
+      }
+
       set({ users: response.data, isUsersLoading: false });
     } catch (error) {
-      console.error("Error fetching users:", error);
       set({ isUsersLoading: false });
     }
   },
@@ -180,7 +180,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const response = await api.get(`/messages/${userId}`);
       set({ messages: response.data, isMessagesLoading: false });
     } catch (error) {
-      console.error("Error fetching messages:", error);
       set({ isMessagesLoading: false });
     }
   },
@@ -338,7 +337,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   sendFormattedMessage: async (
-    content: string,
+    content: any,
     replyToMessage: Message | null = null
   ) => {
     const { selectedUser, formatting } = get();
@@ -348,12 +347,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     const payload = {
       content,
       receiverId: selectedUser.id,
-      fontSize: formatting.fontSize,
-      bold: formatting.bold,
-      italic: formatting.italic,
-      underline: formatting.underline,
-      unorderedList: formatting.unorderedList,
-      orderedList: formatting.orderedList,
       linkTitle: formatting.linkTitle,
       linkTarget: formatting.linkTarget,
       imageName: formatting.imageName,
@@ -432,6 +425,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
   markMessagesAsRead: async (userId: string) => {
     try {
+      const { isMarking } = get();
+      if (isMarking) return;
+      set({ isMarking: true });
+
       const authUser = require("@/store/useAuthStore").useAuthStore.getState()
         .authUser;
       if (!authUser) return;
@@ -508,57 +505,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   clearReplyToMessage: () => {
     set({ replyToMessage: null });
   },
-
-  toggleBold: () => {
-    const { formatting } = get();
-    set({
-      formatting: { ...formatting, bold: true },
-    });
-  },
-
-  toggleItalic: () => {
-    const { formatting } = get();
-    set({
-      formatting: { ...formatting, italic: !formatting.italic },
-    });
-  },
-
-  toggleUnderline: () => {
-    const { formatting } = get();
-    set({
-      formatting: { ...formatting, underline: !formatting.underline },
-    });
-  },
-
-  toggleUnorderedList: () => {
-    const { formatting } = get();
-    set({
-      formatting: {
-        ...formatting,
-        unorderedList: !formatting.unorderedList,
-        orderedList: false,
-      },
-    });
-  },
-
-  toggleOrderedList: () => {
-    const { formatting } = get();
-    set({
-      formatting: {
-        ...formatting,
-        orderedList: !formatting.orderedList,
-        unorderedList: false,
-      },
-    });
-  },
-
-  setFontSize: (fontSize: string) => {
-    const { formatting } = get();
-    set({
-      formatting: { ...formatting, fontSize },
-    });
-  },
-
+  
   setLinkTitle: (linkTitle: string) => {
     const { formatting } = get();
     set({

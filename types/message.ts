@@ -1,10 +1,4 @@
 interface FormattingState {
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-  unorderedList: boolean;
-  orderedList: boolean;
-  fontSize: string;
   linkTitle: string;
   linkTarget: string;
   emoji: string;

@@ -58,9 +58,10 @@ interface ProcessedMessage extends Omit<Message, "reactions"> {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
+    const { params } = await Promise.resolve(context);
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -198,6 +199,7 @@ export async function GET(
 
     return NextResponse.json(processedMessages);
   } catch (error) {
+    console.log("Error fetching messages:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

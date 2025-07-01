@@ -10,6 +10,21 @@ import { Input } from "../ui/input";
 import formatMessageTime from "@/lib/format-message-time";
 import { useAuthStore } from "@/store/useAuthStore";
 
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import { defaultSchema } from "hast-util-sanitize";
+
+const customSchema = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames || []), "u"],
+  attributes: {
+    ...defaultSchema.attributes,
+    span: [...(defaultSchema.attributes?.span || []), "style"],
+    u: [],
+  },
+};
+
 export default function MessagesSection() {
   const {
     getUsers,
@@ -176,6 +191,14 @@ export default function MessagesSection() {
           const isTyping = allTypingUsers[user.id] || false;
           const unreadCount = unreadCounts[user.id] || 0;
 
+          const preProcessedMessage = (message?: string) => {
+            if (!message) return undefined;
+
+            const messageText = message.replace(/\+\+(.+?)\+\+/g, "<u>$1</u>");
+
+            return messageText;
+          };
+
           return (
             <div
               key={user.id}
@@ -227,11 +250,60 @@ export default function MessagesSection() {
                         </span>
                       </div>
                     ) : (
-                      <p className="text-[#475569] text-sm font-[500] truncate">
-                        {unreadCount > 0
-                          ? unreadMessages[user.id]?.message ?? "New message"
-                          : user.lastMessage ?? "No messages yet"}
-                      </p>
+                      <div className="text-[#475569] text-sm font-[500] truncate">
+                        {unreadCount > 0 ? (
+                          <ReactMarkdown
+                            components={{
+                              ul: ({ children }) => (
+                                <ul className="list-disc pl-5 mb-2">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="list-decimal pl-5 mb-2">
+                                  {children}
+                                </ol>
+                              ),
+                              li: ({ children }) => (
+                                <li className="mb-1">{children}</li>
+                              ),
+                            }}
+                            rehypePlugins={[
+                              rehypeRaw,
+                              [rehypeSanitize, customSchema],
+                            ]}
+                          >
+                            {preProcessedMessage(
+                              unreadMessages[user.id]?.message
+                            ) ?? "New message"}
+                          </ReactMarkdown>
+                        ) : (
+                          <ReactMarkdown
+                            components={{
+                              ul: ({ children }) => (
+                                <ul className="list-disc pl-5 mb-2">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="list-decimal pl-5 mb-2">
+                                  {children}
+                                </ol>
+                              ),
+                              li: ({ children }) => (
+                                <li className="mb-1">{children}</li>
+                              ),
+                            }}
+                            rehypePlugins={[
+                              rehypeRaw,
+                              [rehypeSanitize, customSchema],
+                            ]}
+                          >
+                            {preProcessedMessage(user.lastMessage) ??
+                              "No messages yet"}
+                          </ReactMarkdown>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="flex items-center space-x-2 ml-2">

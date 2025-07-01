@@ -21,6 +21,7 @@ import NoConversationDetailSelectedContainer from "@/components/messages/NoConve
 import CandidateDetailsSection from "@/components/messages/CandidateDetailsSection";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const sidebarItems = [
   { icon: Vector, color: "#6e6af0", isActive: false },
@@ -37,9 +38,10 @@ const sidebarItems = [
 export default function Messages() {
   const { selectedUser } = useChatStore();
   const { checkAuth } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
-    checkAuth();
+    checkAuth(router);
   }, []);
 
   return (
