@@ -45,6 +45,20 @@ import formatMessageTime from "@/lib/format-message-time";
 import { toast } from "sonner";
 import { stateToHTML } from "draft-js-export-html";
 import TurndownService from "turndown";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import { defaultSchema } from "hast-util-sanitize";
+
+const customSchema = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames || []), "u"],
+  attributes: {
+    ...defaultSchema.attributes,
+    span: [...(defaultSchema.attributes?.span || []), "style"],
+    u: [],
+  },
+};
 
 const EMOJI_LIST = [
   "😀",
@@ -411,10 +425,25 @@ export default function MessageComposer() {
                   </div>
                 </div>
                 <div className="text-xs text-gray-500">
-                  {truncateText(
-                    replyToMessage.text || replyToMessage.content || "",
-                    50
-                  )}
+                  <ReactMarkdown
+                    components={{
+                      ul: ({ children }) => (
+                        <ul className="list-disc pl-5 mb-2">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="list-decimal pl-5 mb-2">{children}</ol>
+                      ),
+                      li: ({ children }) => (
+                        <li className="mb-1">{children}</li>
+                      ),
+                    }}
+                    rehypePlugins={[rehypeRaw, [rehypeSanitize, customSchema]]}
+                  >
+                    {truncateText(
+                      replyToMessage.text || replyToMessage.content || "",
+                      50
+                    ).replace(/\+\+(.+?)\+\+/g, "<u>$1</u>")}
+                  </ReactMarkdown>
                 </div>
               </div>
             </div>
@@ -768,16 +797,13 @@ export default function MessageComposer() {
             className="bg-[#0CAF60] text-white hover:bg-[#16a34a] rounded-[3px] px-4 py-2 cursor-pointer flex items-center space-x-2 disabled:opacity-50"
           >
             {!isMessageSending && (
-              <Image
-                src={Send || "/placeholder.svg"}
-                width={20}
-                height={20}
-                alt="icon"
-              />
+              <Image src={Send} width={20} height={20} alt="icon" />
             )}
             <p className="font-[500] text-sm">
               {replyToMessage
-                ? "Reply"
+                ? isMessageSending
+                  ? "Replying..."
+                  : "Reply"
                 : isMessageSending
                 ? "Sending..."
                 : "Send"}

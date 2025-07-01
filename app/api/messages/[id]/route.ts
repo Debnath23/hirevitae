@@ -199,6 +199,7 @@ export async function GET(
 
     return NextResponse.json(processedMessages);
   } catch (error) {
+    console.log("Error fetching messages:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

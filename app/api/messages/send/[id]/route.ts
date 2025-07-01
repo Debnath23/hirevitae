@@ -42,12 +42,6 @@ export async function POST(
 
     const messageData: {
       text: object;
-      bold: boolean;
-      italic: boolean;
-      underline: boolean;
-      unorderedList: boolean;
-      orderedList: boolean;
-      fontSize: string;
       linkTitle: string | null;
       linkTarget: string | null;
       emoji: string | null;
@@ -60,12 +54,6 @@ export async function POST(
       metadata?: string;
     } = {
       text: body.content,
-      bold: body?.bold || false,
-      italic: body?.italic || false,
-      underline: body?.underline || false,
-      unorderedList: body?.unorderedList || false,
-      orderedList: body?.orderedList || false,
-      fontSize: body?.fontSize || "14",
       linkTitle: body?.linkTitle || null,
       linkTarget: body?.linkTarget || null,
       emoji: body?.emoji || null,
@@ -149,7 +137,6 @@ export async function POST(
 
     return NextResponse.json(responseMessage, { status: 201 });
   } catch (error) {
-    console.log("Error sending message:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

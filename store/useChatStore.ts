@@ -117,13 +117,6 @@ interface ChatStore {
   setUnreadCount: (userId: string, count: number) => void;
   resetUnreadCount: (userId: string) => void;
   markMessagesAsRead: (userId: string) => Promise<void>;
-
-  toggleBold: () => void;
-  toggleItalic: () => void;
-  toggleUnderline: () => void;
-  toggleUnorderedList: () => void;
-  toggleOrderedList: () => void;
-  setFontSize: (fontSize: string) => void;
   setLinkTitle: (linkTitle: string) => void;
   setLinkTarget: (linkTarget: string) => void;
   setEmoji: (emoji: string) => void;
@@ -354,12 +347,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     const payload = {
       content,
       receiverId: selectedUser.id,
-      fontSize: formatting.fontSize,
-      bold: formatting.bold,
-      italic: formatting.italic,
-      underline: formatting.underline,
-      unorderedList: formatting.unorderedList,
-      orderedList: formatting.orderedList,
       linkTitle: formatting.linkTitle,
       linkTarget: formatting.linkTarget,
       imageName: formatting.imageName,
@@ -518,57 +505,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   clearReplyToMessage: () => {
     set({ replyToMessage: null });
   },
-
-  toggleBold: () => {
-    const { formatting } = get();
-    set({
-      formatting: { ...formatting, bold: true },
-    });
-  },
-
-  toggleItalic: () => {
-    const { formatting } = get();
-    set({
-      formatting: { ...formatting, italic: !formatting.italic },
-    });
-  },
-
-  toggleUnderline: () => {
-    const { formatting } = get();
-    set({
-      formatting: { ...formatting, underline: !formatting.underline },
-    });
-  },
-
-  toggleUnorderedList: () => {
-    const { formatting } = get();
-    set({
-      formatting: {
-        ...formatting,
-        unorderedList: !formatting.unorderedList,
-        orderedList: false,
-      },
-    });
-  },
-
-  toggleOrderedList: () => {
-    const { formatting } = get();
-    set({
-      formatting: {
-        ...formatting,
-        orderedList: !formatting.orderedList,
-        unorderedList: false,
-      },
-    });
-  },
-
-  setFontSize: (fontSize: string) => {
-    const { formatting } = get();
-    set({
-      formatting: { ...formatting, fontSize },
-    });
-  },
-
+  
   setLinkTitle: (linkTitle: string) => {
     const { formatting } = get();
     set({

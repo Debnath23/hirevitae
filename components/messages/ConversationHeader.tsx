@@ -166,15 +166,6 @@ function ConversationHeader() {
                   <p className="text-[#475569]">
                     {selectedUser?.email || "No email provided"}
                   </p>
-                  {/* <Badge
-                    className={`${
-                      onlineUsers.includes(selectedUser.id)
-                        ? "bg-[#F0FDF4] border border-[#BBF7D0] text-[#22C55E]"
-                        : "bg-[#F8FAFC] border border-[#E2E8F0] text-[#64748B]"
-                    } font-[500]`}
-                  >
-                    {getLastSeenText()}
-                  </Badge> */}
                 </div>
                 <div className="w-full space-y-2 text-sm">
                   <div className="flex justify-between">

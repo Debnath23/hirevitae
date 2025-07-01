@@ -71,10 +71,10 @@ function groupMessagesByDate(messages: any[]) {
     const displayDate = isToday
       ? "Today"
       : messageDateObj.toLocaleDateString("en-US", {
-          weekday: "long",
-          month: "short",
-          day: "numeric",
-        });
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      });
 
     if (displayDate !== currentDate) {
       grouped.push({ date: displayDate });
@@ -412,10 +412,34 @@ function Messages() {
                       />
                       <div className="flex items-center justify-between w-full">
                         <div className="text-[#0053F2] text-sm font-[400]">
-                          {message.quote?.text ||
-                            message.replyToMessage?.text ||
-                            message.replyToMessage?.content ||
-                            ""}
+                          <ReactMarkdown
+                            components={{
+                              ul: ({ children }) => (
+                                <ul className="list-disc pl-5 mb-2">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="list-decimal pl-5 mb-2">
+                                  {children}
+                                </ol>
+                              ),
+                              li: ({ children }) => (
+                                <li className="mb-1">{children}</li>
+                              ),
+                            }}
+                            rehypePlugins={[
+                              rehypeRaw,
+                              [rehypeSanitize, customSchema],
+                            ]}
+                          >
+                            {(
+                              message.quote?.text ||
+                              message.replyToMessage?.text ||
+                              message.replyToMessage?.content ||
+                              ""
+                            ).replace(/\+\+(.+?)\+\+/g, "<u>$1</u>")}
+                          </ReactMarkdown>
                         </div>
                         <div className="text-[#656F7D] text-sm font-[400]">
                           —{" "}
@@ -572,52 +596,49 @@ function Messages() {
                   <div className="flex items-center space-x-4 mt-2">
                     {message.reactions.map((reaction: any, idx: number) => (
                       <div
-                        key={`${reaction.id || idx}-${
-                          reaction.emoji?.name || reaction.name
-                        }`}
-                        className={`flex items-center space-x-1.5 ${
-                          !message.quote
+                        key={`${reaction.id || idx}-${reaction.emoji?.name || reaction.name
+                          }`}
+                        className={`flex items-center space-x-1.5 ${!message.quote
                             ? "bg-[#F1F5F9] py-1 px-2 rounded-[3px]"
                             : "bg-[#F7F7F7] border border-[#EEEDF0] py-1 px-2 rounded-[19px]"
-                        } cursor-pointer hover:bg-gray-200 transition-colors`}
+                          } cursor-pointer hover:bg-gray-200 transition-colors`}
                       >
                         <span
-                          className={`${
-                            !message.quote
+                          className={`${!message.quote
                               ? "text-base font-[700] text-[#475569]"
                               : "text-xs font-[400] text-[#646464]"
-                          }`}
+                            }`}
                         >
                           {reaction.count || 1}
                         </span>
                         <span>
                           {(reaction.emoji?.name === "heart" ||
                             reaction.emojiName === "heart") && (
-                            <Image
-                              src={Emoji1}
-                              width={16}
-                              height={16}
-                              alt="heart"
-                            />
-                          )}
+                              <Image
+                                src={Emoji1}
+                                width={16}
+                                height={16}
+                                alt="heart"
+                              />
+                            )}
                           {(reaction.emoji?.name === "thumbsUp" ||
                             reaction.emojiName === "thumbsUp") && (
-                            <Image
-                              src={Emoji2}
-                              width={16}
-                              height={16}
-                              alt="thumbsUp"
-                            />
-                          )}
+                              <Image
+                                src={Emoji2}
+                                width={16}
+                                height={16}
+                                alt="thumbsUp"
+                              />
+                            )}
                           {(reaction.emoji?.name === "smile" ||
                             reaction.emojiName === "smile") && (
-                            <Image
-                              src={Emoji3}
-                              width={16}
-                              height={16}
-                              alt="smile"
-                            />
-                          )}
+                              <Image
+                                src={Emoji3}
+                                width={16}
+                                height={16}
+                                alt="smile"
+                              />
+                            )}
                         </span>
                       </div>
                     ))}
@@ -632,11 +653,10 @@ function Messages() {
                     {emojiReactions.map((item) => (
                       <button
                         key={item.name}
-                        className={`hover:bg-slate-300 p-[1px] rounded-full transition-colors cursor-pointer ${
-                          message.isReacting
+                        className={`hover:bg-slate-300 p-[1px] rounded-full transition-colors cursor-pointer ${message.isReacting
                             ? "opacity-50 cursor-not-allowed"
                             : ""
-                        }`}
+                          }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!message.isReacting) {

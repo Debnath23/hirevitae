@@ -61,12 +61,6 @@ model Message {
   id            Int      @id @default(autoincrement())
   text          Json?
   metadata      String?  @db.Text // JSON: { replyToId, replyToSenderId, replyToContent }
-  bold          Boolean  @default(false)
-  italic        Boolean  @default(false)
-  underline     Boolean  @default(false)
-  unorderedList Boolean  @default(false)
-  orderedList   Boolean  @default(false)
-  fontSize      String   @default("14") @db.VarChar(10)
   linkTitle     String?  @db.Text
   linkTarget    String?  @db.Text
   emoji         String?  @db.VarChar(10)

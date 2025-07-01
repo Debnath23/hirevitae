@@ -7,14 +7,14 @@ import { signOut } from "next-auth/react";
 
 interface LogoutButtonProps extends ComponentProps<typeof Button> {
   showIcon?: boolean;
-  callbackUrl?: string; // Optional redirect after logout
+  callbackUrl?: string;
 }
 
 export default function LogoutButton({
   variant = "ghost",
   showIcon = true,
   children,
-  callbackUrl = "/login", // Default redirect after logout
+  callbackUrl = "/login",
   ...props
 }: LogoutButtonProps) {
   const handleLogout = () => {
