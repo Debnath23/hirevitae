@@ -67,11 +67,187 @@ const activities = [
   },
 ];
 
+function CandidateDetailsSkeleton() {
+  return (
+    <div className="w-96 bg-[#F8F7F7] border-l border-[#e2e8f0] overflow-y-auto hide-scrollbar animate-pulse">
+      {/* Header Skeleton */}
+      <div className="px-6 pt-6 pb-2">
+        <div className="h-6 bg-gray-200 rounded mx-auto w-40"></div>
+      </div>
+
+      {/* Profile Section Skeleton */}
+      <div className="px-6 py-6 text-center">
+        <div className="relative inline-block mb-4">
+          <div className="w-[120.73px] h-[122.96px] rounded-full bg-gray-200 mx-auto"></div>
+          <div className="absolute bottom-4 right-1">
+            <div className="w-[21.19px] h-[21.19px] bg-gray-200 rounded-full"></div>
+          </div>
+          <div className="absolute -bottom-2 left-9 h-6 w-16 bg-gray-200 rounded"></div>
+        </div>
+        <div className="h-6 bg-gray-200 rounded mb-1 w-48 mx-auto"></div>
+        <div className="h-4 bg-gray-200 rounded mb-4 w-40 mx-auto"></div>
+
+        {/* Badges Skeleton */}
+        <div className="flex justify-center space-x-4 mb-6">
+          <div className="h-6 w-20 bg-gray-200 rounded"></div>
+          <div className="h-6 w-16 bg-gray-200 rounded"></div>
+          <div className="h-6 w-24 bg-gray-200 rounded"></div>
+        </div>
+
+        {/* Social Links Skeleton */}
+        <div className="flex justify-center space-x-3 mb-6">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="w-8 h-8 bg-gray-200 rounded"></div>
+          ))}
+        </div>
+      </div>
+
+      {/* Application Info Skeleton */}
+      <div className="px-6 mb-6">
+        <div className="flex justify-center items-center mb-2">
+          <div className="h-4 w-32 bg-gray-200 rounded"></div>
+          <div className="w-px h-[13px] border border-[#DCDCDC] mx-1"></div>
+          <div className="h-4 w-28 bg-gray-200 rounded"></div>
+        </div>
+        <div className="flex justify-center items-center mb-4">
+          <div className="h-4 w-24 bg-gray-200 rounded"></div>
+          <div className="w-px h-[13px] border border-[#DCDCDC] mx-1"></div>
+          <div className="h-4 w-20 bg-gray-200 rounded"></div>
+        </div>
+
+        {/* Status Badges Skeleton */}
+        <div className="flex flex-col items-center mb-6 space-y-2">
+          <div className="flex gap-2">
+            <div className="w-[149.33px] h-[31.01px] bg-gray-200 rounded"></div>
+            <div className="w-[88.2px] h-[30.1px] bg-gray-200 rounded"></div>
+          </div>
+          <div className="flex gap-2">
+            <div className="w-[149.33px] h-[31.01px] bg-gray-200 rounded"></div>
+            <div className="w-[88.2px] h-[30.1px] bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Section Skeleton */}
+      <div className="mb-6 px-[15px]">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            className="flex items-center justify-between py-3 border-b border-[#f1f5f9] last:border-b-0"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+              <div className="h-4 w-32 bg-gray-200 rounded"></div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="h-6 w-8 bg-gray-200 rounded-full"></div>
+              <div className="w-4 h-4 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Schedules Section Skeleton */}
+      <div className="px-6 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <div className="h-5 w-20 bg-gray-200 rounded"></div>
+            <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
+          </div>
+          <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        </div>
+        <Card className="border-[#e2e8f0]">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-32 bg-gray-200 rounded"></div>
+                <div className="h-3 w-28 bg-gray-200 rounded"></div>
+              </div>
+              <div className="w-5 h-5 bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Notes Section Skeleton */}
+      <div className="px-6 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <div className="h-5 w-16 bg-gray-200 rounded"></div>
+            <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
+          </div>
+          <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        </div>
+        <div className="space-y-2">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <Card key={index} className="border-[#e2e8f0]">
+              <CardContent className="p-4">
+                <div className="flex space-x-3 mb-2">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1 space-y-1">
+                    <div className="h-3 w-32 bg-gray-200 rounded"></div>
+                    <div className="h-3 w-20 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="h-3 w-full bg-gray-200 rounded"></div>
+                  <div className="h-3 w-3/4 bg-gray-200 rounded"></div>
+                  <div className="h-3 w-20 bg-gray-200 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Activities Section Skeleton */}
+      <div className="px-6 pb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <div className="h-5 w-20 bg-gray-200 rounded"></div>
+            <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
+          </div>
+          <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        </div>
+        <div className="mb-2">
+          <div className="h-3 w-12 bg-gray-200 rounded"></div>
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Card key={index} className="border-[#e2e8f0]">
+              <CardContent className="p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="h-3 w-32 bg-gray-200 rounded"></div>
+                      <div className="flex items-center space-x-1">
+                        <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                        <div className="w-2 h-2 bg-gray-200 rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="h-3 w-full bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CandidateDetailsSection() {
-  const { selectedUser } = useChatStore();
+  const { selectedUser, loadingSelectedUser } = useChatStore();
   const { isUserOnline } = useAuthStore();
 
   const online = isUserOnline(selectedUser?.id);
+
+  if (loadingSelectedUser) {
+    return <CandidateDetailsSkeleton />;
+  }
 
   if (!selectedUser) {
     return (

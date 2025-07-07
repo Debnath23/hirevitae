@@ -80,6 +80,7 @@ interface ChatStore {
   messages: Message[];
   users: User[];
   selectedUser: User | null;
+  loadingSelectedUser: boolean;
   isUsersLoading: boolean;
   isMessagesLoading: boolean;
   formatting: FormattingState;
@@ -131,6 +132,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   messages: [],
   users: [],
   selectedUser: null,
+  loadingSelectedUser: false,
   isUsersLoading: false,
   isMessagesLoading: false,
   replyToMessage: null,
@@ -487,15 +489,23 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     if (selectedUser?.id === user.id) return;
 
-    unsubscribeFromMessages();
+    set({ loadingSelectedUser: true });
 
-    set({ selectedUser: user, messages: [] });
+    try {
+      unsubscribeFromMessages();
 
-    await Promise.all([markMessagesAsRead(user.id), getMessages(user.id)]);
+      set({ selectedUser: user, messages: [] });
 
-    resetUnreadCount(user.id);
+      await Promise.all([markMessagesAsRead(user.id), getMessages(user.id)]);
 
-    subscribeToMessages();
+      resetUnreadCount(user.id);
+
+      subscribeToMessages();
+    } catch (error) {
+      toast.error("Failed to load messages for the selected user.");
+    } finally {
+      set({ loadingSelectedUser: false });
+    }
   },
 
   setReplyToMessage: (message: Message | null) => {
@@ -505,7 +515,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   clearReplyToMessage: () => {
     set({ replyToMessage: null });
   },
-  
+
   setLinkTitle: (linkTitle: string) => {
     const { formatting } = get();
     set({

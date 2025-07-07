@@ -15,12 +15,45 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+function ConversationHeaderSkeleton() {
+  return (
+    <div className="bg-white border-b border-[#e2e8f0] px-6 py-4 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-gray-200 rounded-full"></div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2 mb-1">
+              <div className="h-4 w-32 bg-gray-200 rounded"></div>
+              <div className="h-6 w-16 bg-gray-200 rounded"></div>
+            </div>
+            <div className="h-3 w-40 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+          <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+          <div className="h-8 w-24 bg-gray-200 rounded"></div>
+          <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+          <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ConversationHeader() {
-  const { selectedUser } = useChatStore();
+  const { selectedUser, loadingSelectedUser } = useChatStore();
   const { isUserOnline } = useAuthStore();
   const [showProfileDialog, setShowProfileDialog] = useState(false);
 
   const online = isUserOnline(selectedUser?.id);
+
+  if (loadingSelectedUser) {
+    return <ConversationHeaderSkeleton />;
+  }
 
   if (!selectedUser) {
     return (
@@ -110,12 +143,7 @@ function ConversationHeader() {
             className="bg-[#F4ECFB] text-[#883DCF] hover:bg-[#dfd9e9] rounded-full cursor-pointer transition-colors"
             title="Inbox"
           >
-            <Image
-              src={Inbox}
-              alt="inbox"
-              width={16}
-              height={16}
-            />
+            <Image src={Inbox} alt="inbox" width={16} height={16} />
           </Button>
 
           <Button
@@ -123,12 +151,7 @@ function ConversationHeader() {
             size="icon"
             className="rounded-full transition-colors bg-[#883DCF] text-[#FFFFFF] hover:bg-[#7c3aed] cursor-pointer"
           >
-            <Image
-              src={Call}
-              alt="call"
-              width={19}
-              height={19}
-            />
+            <Image src={Call} alt="call" width={19} height={19} />
           </Button>
 
           <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>

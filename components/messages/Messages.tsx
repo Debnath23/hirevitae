@@ -71,10 +71,10 @@ function groupMessagesByDate(messages: any[]) {
     const displayDate = isToday
       ? "Today"
       : messageDateObj.toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "short",
-        day: "numeric",
-      });
+          weekday: "long",
+          month: "short",
+          day: "numeric",
+        });
 
     if (displayDate !== currentDate) {
       grouped.push({ date: displayDate });
@@ -86,8 +86,54 @@ function groupMessagesByDate(messages: any[]) {
   return grouped;
 }
 
+function MessagesSkeleton() {
+  return (
+    <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-4 space-y-6">
+      {/* Date separator skeleton */}
+      <div className="flex justify-center my-6">
+        <div className="h-4 w-24 bg-gray-200 rounded-full animate-pulse"></div>
+      </div>
+      {/* Message skeletons */}
+      {Array.from({ length: 10 }).map((_, index) => (
+        <div
+          key={index}
+          className="flex space-x-3 bg-white rounded-[8px] p-3 shadow-sm relative group animate-pulse"
+        >
+          {/* Avatar skeleton */}
+          <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+          <div className="flex-1 space-y-3">
+            {/* Header skeleton */}
+            <div className="flex items-center space-x-2">
+              <div className="h-4 w-24 bg-gray-200 rounded"></div>
+              <div className="h-3 w-16 bg-gray-200 rounded"></div>
+            </div>
+            {/* Message content skeleton */}
+            <div className="space-y-2">
+              <div className="h-4 w-full bg-gray-200 rounded"></div>
+              <div className="h-4 w-5/6 bg-gray-200 rounded"></div>
+              <div className="h-4 w-4/6 bg-gray-200 rounded"></div>
+            </div>
+            {/* Attachment skeleton (randomly shown) */}
+            {index % 3 === 0 && (
+              <div className="flex gap-2">
+                <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                <div className="h-8 w-24 bg-gray-200 rounded"></div>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Messages() {
-  const { selectedUser, isMessagesLoading, setReplyToMessage } = useChatStore();
+  const {
+    selectedUser,
+    isMessagesLoading,
+    setReplyToMessage,
+    loadingSelectedUser,
+  } = useChatStore();
 
   const messages = useChatStore((state) => state.messages);
 
@@ -282,6 +328,10 @@ function Messages() {
         ))}
       </div>
     );
+  }
+
+  if (loadingSelectedUser || isMessagesLoading) {
+    return <MessagesSkeleton />;
   }
 
   if (messages.length === 0) {
@@ -596,49 +646,52 @@ function Messages() {
                   <div className="flex items-center space-x-4 mt-2">
                     {message.reactions.map((reaction: any, idx: number) => (
                       <div
-                        key={`${reaction.id || idx}-${reaction.emoji?.name || reaction.name
-                          }`}
-                        className={`flex items-center space-x-1.5 ${!message.quote
+                        key={`${reaction.id || idx}-${
+                          reaction.emoji?.name || reaction.name
+                        }`}
+                        className={`flex items-center space-x-1.5 ${
+                          !message.quote
                             ? "bg-[#F1F5F9] py-1 px-2 rounded-[3px]"
                             : "bg-[#F7F7F7] border border-[#EEEDF0] py-1 px-2 rounded-[19px]"
-                          } cursor-pointer hover:bg-gray-200 transition-colors`}
+                        } cursor-pointer hover:bg-gray-200 transition-colors`}
                       >
                         <span
-                          className={`${!message.quote
+                          className={`${
+                            !message.quote
                               ? "text-base font-[700] text-[#475569]"
                               : "text-xs font-[400] text-[#646464]"
-                            }`}
+                          }`}
                         >
                           {reaction.count || 1}
                         </span>
                         <span>
                           {(reaction.emoji?.name === "heart" ||
                             reaction.emojiName === "heart") && (
-                              <Image
-                                src={Emoji1}
-                                width={16}
-                                height={16}
-                                alt="heart"
-                              />
-                            )}
+                            <Image
+                              src={Emoji1}
+                              width={16}
+                              height={16}
+                              alt="heart"
+                            />
+                          )}
                           {(reaction.emoji?.name === "thumbsUp" ||
                             reaction.emojiName === "thumbsUp") && (
-                              <Image
-                                src={Emoji2}
-                                width={16}
-                                height={16}
-                                alt="thumbsUp"
-                              />
-                            )}
+                            <Image
+                              src={Emoji2}
+                              width={16}
+                              height={16}
+                              alt="thumbsUp"
+                            />
+                          )}
                           {(reaction.emoji?.name === "smile" ||
                             reaction.emojiName === "smile") && (
-                              <Image
-                                src={Emoji3}
-                                width={16}
-                                height={16}
-                                alt="smile"
-                              />
-                            )}
+                            <Image
+                              src={Emoji3}
+                              width={16}
+                              height={16}
+                              alt="smile"
+                            />
+                          )}
                         </span>
                       </div>
                     ))}
@@ -653,10 +706,11 @@ function Messages() {
                     {emojiReactions.map((item) => (
                       <button
                         key={item.name}
-                        className={`hover:bg-slate-300 p-[1px] rounded-full transition-colors cursor-pointer ${message.isReacting
+                        className={`hover:bg-slate-300 p-[1px] rounded-full transition-colors cursor-pointer ${
+                          message.isReacting
                             ? "opacity-50 cursor-not-allowed"
                             : ""
-                          }`}
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!message.isReacting) {

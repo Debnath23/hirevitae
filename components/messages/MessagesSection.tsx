@@ -14,6 +14,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import { defaultSchema } from "hast-util-sanitize";
+import { ArrowLeft, Calendar, Trophy, Zap } from "lucide-react";
 
 const customSchema = {
   ...defaultSchema,
@@ -49,6 +50,10 @@ export default function MessagesSection() {
     lastMessage?: string;
     lastMessageSenderId?: string;
     lastMessageSeen?: string;
+    interviewInvitationReceived?: boolean;
+    isShortlisted?: boolean;
+    interviewScheduled?: boolean;
+    inTouch?: boolean;
   };
 
   const sortedUsers = useMemo(() => {
@@ -184,7 +189,7 @@ export default function MessagesSection() {
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto hide-scrollbar">
+      <div className="flex-1 overflow-y-auto hide-scrollbar bg-[#FFFFFF]">
         {filteredUsers.map((user) => {
           const isSelected = selectedUser?.id === user.id;
           const isOnline = isUserOnline(user.id);
@@ -202,7 +207,7 @@ export default function MessagesSection() {
           return (
             <div
               key={user.id}
-              className={`flex items-center px-6 py-4 hover:bg-[#f8fafc] cursor-pointer border-b border-[#f2f2f9] relative ${
+              className={`flex items-start px-6 py-4 h-32 hover:bg-[#f8fafc] cursor-pointer border-b border-[#f2f2f9] relative ${
                 isSelected
                   ? "border-l-2 border-l-[#6e6af0] bg-[#f8fafc]"
                   : "bg-[#FFFFFF]"
@@ -333,6 +338,39 @@ export default function MessagesSection() {
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Status and notifications */}
+              {!user.interviewInvitationReceived && (
+                <div className="flex items-center gap-1 text-red-500 absolute bottom-9 left-8">
+                  <ArrowLeft className="w-3 h-3" />
+                  <span className="text-xs font-medium">
+                    Interview invitation received. Confirm now?
+                  </span>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3 mt-1 absolute bottom-2 left-8">
+                {!user.isShortlisted && (
+                  <div className="flex items-center gap-1 text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-[3.26px]">
+                    <Trophy className="w-3 h-3" />
+                    <span className="text-xs font-medium">Shortlisted</span>
+                  </div>
+                )}
+                {!user.interviewScheduled && (
+                  <div className="flex items-center gap-1 text-blue-600 bg-blue-100 px-2 py-0.5 rounded-[3.26px]">
+                    <Calendar className="w-3 h-3" />
+                    <span className="text-xs font-medium">
+                      Interview scheduled
+                    </span>
+                  </div>
+                )}
+                {user.inTouch && (
+                  <div className="flex items-center gap-1 text-[#3b82f6] bg-blue-100 px-2 py-0.5 rounded-[3.26px]">
+                    <Zap className="w-3 h-3" />
+                    <span className="text-xs font-medium">In touch</span>
+                  </div>
+                )}
               </div>
             </div>
           );
